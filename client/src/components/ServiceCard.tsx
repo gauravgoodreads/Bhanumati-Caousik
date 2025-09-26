@@ -13,7 +13,7 @@ export default function ServiceCard({ icon: Icon, title, description, gradient }
   return (
     <motion.div
       whileHover={{ y: -8, scale: 1.02 }}
-      transition={{ duration: 0.3 }}
+      transition={{ duration: 0.2 }}
     >
       <Card className="group border-0 bg-white/90 backdrop-blur-md shadow-lg hover:shadow-2xl transition-all duration-500 rounded-2xl overflow-hidden relative" data-testid={`service-card-${title.toLowerCase().replace(/\s+/g, '-')}`}>
         <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-green-50/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -21,7 +21,7 @@ export default function ServiceCard({ icon: Icon, title, description, gradient }
           <motion.div 
             className={`inline-flex items-center justify-center w-20 h-20 rounded-2xl mb-6 ${gradient} shadow-lg relative`}
             whileHover={{ rotate: 5, scale: 1.1 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.2 }}
           >
             <Icon className="h-10 w-10 text-white" />
             <div className="absolute inset-0 bg-white/20 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />

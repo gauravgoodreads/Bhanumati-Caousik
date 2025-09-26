@@ -57,7 +57,7 @@ export default function Services() {
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
+          transition={{ duration: 0.4 }}
         >
           <motion.h2 
             className="font-heading text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-6" 
@@ -65,7 +65,7 @@ export default function Services() {
             initial={{ opacity: 0, scale: 0.8 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.8, delay: 0.2 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
           >
             Our Core <span className="bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">Services</span>
           </motion.h2>
@@ -74,7 +74,7 @@ export default function Services() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.8, delay: 0.4 }}
+            transition={{ duration: 0.3, delay: 0.2 }}
           >
             Comprehensive solutions for personal and professional growth across all stages of your career journey.
           </motion.p>
@@ -86,7 +86,7 @@ export default function Services() {
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.8, delay: 0.6 }}
+          transition={{ duration: 0.4, delay: 0.3 }}
         >
           {services.map((service, index) => (
             <motion.div
@@ -94,7 +94,7 @@ export default function Services() {
               initial={{ opacity: 0, y: 50 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.8, delay: 0.8 + index * 0.1 }}
+              transition={{ duration: 0.4, delay: 0.4 + index * 0.05 }}
             >
               <ServiceCard
                 icon={service.icon}

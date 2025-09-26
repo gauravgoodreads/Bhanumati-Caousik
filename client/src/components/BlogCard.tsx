@@ -20,7 +20,7 @@ export default function BlogCard({ title, excerpt, image, date, readTime, onClic
           alt={title}
           className="w-full h-full object-cover"
           whileHover={{ scale: 1.1 }}
-          transition={{ duration: 0.6 }}
+          transition={{ duration: 0.3 }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
       </div>
@@ -40,7 +40,7 @@ export default function BlogCard({ title, excerpt, image, date, readTime, onClic
         <motion.div 
           className="flex items-center text-blue-600 font-medium group-hover:text-blue-700"
           whileHover={{ x: 5 }}
-          transition={{ duration: 0.2 }}
+          transition={{ duration: 0.15 }}
         >
           <span>Read More</span>
           <motion.div

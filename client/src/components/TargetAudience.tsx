@@ -45,7 +45,7 @@ export default function TargetAudience() {
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
+          transition={{ duration: 0.4 }}
         >
           <motion.h2 
             className="font-heading text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-6" 
@@ -53,7 +53,7 @@ export default function TargetAudience() {
             initial={{ opacity: 0, scale: 0.8 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.8, delay: 0.2 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
           >
             Tailored <span className="bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">Guidance</span> for Every Stage
           </motion.h2>
@@ -62,7 +62,7 @@ export default function TargetAudience() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.8, delay: 0.4 }}
+            transition={{ duration: 0.3, delay: 0.2 }}
           >
             Whether you're a student exploring options, a professional seeking growth, or an organization building excellence, we have specialized solutions for you.
           </motion.p>
@@ -74,7 +74,7 @@ export default function TargetAudience() {
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.8, delay: 0.6 }}
+          transition={{ duration: 0.4, delay: 0.3 }}
         >
           {audiences.map((audience, index) => {
             const Icon = audience.icon;
@@ -84,7 +84,7 @@ export default function TargetAudience() {
                 initial={{ opacity: 0, y: 50 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.8, delay: 0.8 + index * 0.2 }}
+                transition={{ duration: 0.4, delay: 0.4 + index * 0.1 }}
                 whileHover={{ y: -8, scale: 1.02 }}
               >
                 <Card className="group border-0 bg-white/95 backdrop-blur-md shadow-lg hover:shadow-2xl transition-all duration-500 rounded-2xl overflow-hidden relative" data-testid={`audience-card-${audience.title.toLowerCase().replace(/\s+/g, '-')}`}>
@@ -94,7 +94,7 @@ export default function TargetAudience() {
                       <motion.div 
                         className={`flex-shrink-0 p-4 rounded-2xl bg-gradient-to-r ${audience.color} shadow-lg`}
                         whileHover={{ rotate: 5, scale: 1.1 }}
-                        transition={{ duration: 0.3 }}
+                        transition={{ duration: 0.2 }}
                       >
                         <Icon className="h-8 w-8 text-white" />
                       </motion.div>

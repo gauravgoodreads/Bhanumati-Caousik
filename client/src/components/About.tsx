@@ -25,7 +25,7 @@ export default function About() {
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          transition={{ duration: 1 }}
+          transition={{ duration: 0.5 }}
         >
           {/* Image Side */}
           <motion.div 
@@ -34,21 +34,21 @@ export default function About() {
             initial={{ opacity: 0, x: -50 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.8, delay: 0.2 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
           >
             <div className="relative w-full max-w-md mx-auto">
               {/* Enhanced placeholder for profile image */}
               <motion.div 
                 className="aspect-square rounded-3xl bg-gradient-to-br from-blue-100 via-purple-50 to-green-100 p-8 shadow-2xl border border-white/50 backdrop-blur-sm"
                 whileHover={{ scale: 1.02, rotate: 1 }}
-                transition={{ duration: 0.3 }}
+                transition={{ duration: 0.2 }}
               >
                 <div className="w-full h-full rounded-2xl bg-gradient-to-br from-blue-200 via-purple-100 to-green-200 flex items-center justify-center relative overflow-hidden">
                   <div className="text-center z-10">
                     <motion.div 
                       className="w-28 h-28 bg-white rounded-full mx-auto mb-6 flex items-center justify-center shadow-lg"
                       whileHover={{ scale: 1.1, rotate: 10 }}
-                      transition={{ duration: 0.3 }}
+                      transition={{ duration: 0.2 }}
                     >
                       <Award className="h-14 w-14 text-blue-600" />
                     </motion.div>
@@ -97,7 +97,7 @@ export default function About() {
             initial={{ opacity: 0, x: 50 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.8, delay: 0.4 }}
+            transition={{ duration: 0.4, delay: 0.2 }}
           >
             <motion.h2 
               className="font-heading text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-6" 
@@ -105,7 +105,7 @@ export default function About() {
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.8, delay: 0.6 }}
+              transition={{ duration: 0.4, delay: 0.3 }}
             >
               Meet <span className="bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">Bhanumathi Cousik</span>
             </motion.h2>
@@ -115,7 +115,7 @@ export default function About() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.8, delay: 0.8 }}
+              transition={{ duration: 0.3, delay: 0.4 }}
             >
               Your Trusted Career Architect & Corporate Trainer
             </motion.h3>
@@ -125,7 +125,7 @@ export default function About() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.8, delay: 1 }}
+              transition={{ duration: 0.3, delay: 0.5 }}
             >
               <p className="text-gray-600 leading-relaxed text-lg" data-testid="about-bio-1">
                 With over 36 years of comprehensive professional experience, including 22 distinguished years in the banking sector, Bhanumathi brings unparalleled expertise in career development, sales excellence, and organizational transformation.
@@ -143,7 +143,7 @@ export default function About() {
               initial={{ opacity: 0, scale: 0.95 }}
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.8, delay: 1.2 }}
+              transition={{ duration: 0.4, delay: 0.6 }}
             >
               <Card className="bg-gradient-to-r from-blue-50 via-purple-50/50 to-green-50 border-l-4 border-l-blue-500 mb-8 shadow-lg">
                 <CardContent className="p-8">
@@ -159,7 +159,7 @@ export default function About() {
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.8, delay: 1.4 }}
+              transition={{ duration: 0.4, delay: 0.7 }}
             >
               <h4 className="font-heading text-lg font-semibold text-gray-900 mb-6 flex items-center" data-testid="credentials-title">
                 <Award className="h-6 w-6 mr-3 text-blue-600" />
@@ -174,7 +174,7 @@ export default function About() {
                     initial={{ opacity: 0, x: -20 }}
                     whileInView={{ opacity: 1, x: 0 }}
                     viewport={{ once: true }}
-                    transition={{ duration: 0.6, delay: 1.6 + index * 0.1 }}
+                    transition={{ duration: 0.3, delay: 0.8 + index * 0.05 }}
                     whileHover={{ scale: 1.02 }}
                   >
                     <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />

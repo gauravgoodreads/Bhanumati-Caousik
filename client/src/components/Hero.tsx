@@ -93,7 +93,7 @@ export default function Hero() {
             data-testid="hero-badge"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
             whileHover={{ scale: 1.05, y: -2 }}
           >
             <Sparkles className="w-4 h-4 mr-2 text-blue-600" />
@@ -106,12 +106,12 @@ export default function Hero() {
             data-testid="hero-headline"
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.4 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
           >
             <motion.span
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.6 }}
+              transition={{ delay: 0.3 }}
             >
               Empowering Growth for{' '}
             </motion.span>
@@ -119,7 +119,7 @@ export default function Hero() {
               className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-purple-600 to-green-600 animate-pulse"
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.8, delay: 0.8 }}
+              transition={{ duration: 0.4, delay: 0.4 }}
             >
               36+ Years
             </motion.span>
@@ -127,7 +127,7 @@ export default function Hero() {
             <motion.span
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 1 }}
+              transition={{ delay: 0.5 }}
             >
               From Corporate Leadership to Career Clarity
             </motion.span>
@@ -138,7 +138,7 @@ export default function Hero() {
             data-testid="hero-subheadline"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 1.2 }}
+            transition={{ duration: 0.4, delay: 0.6 }}
           >
             Your Partner in Professional & Personal Development
           </motion.h2>
@@ -149,7 +149,7 @@ export default function Hero() {
             data-testid="hero-description"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 1.4 }}
+            transition={{ duration: 0.3, delay: 0.7 }}
           >
             Expert guidance for Students, Parents, Schools, and Corporates in Sales, Service, Training, and Career Development.
           </motion.p>
@@ -159,7 +159,7 @@ export default function Hero() {
             className="flex flex-col sm:flex-row gap-4 justify-center mb-16"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 1.6 }}
+            transition={{ duration: 0.4, delay: 0.8 }}
           >
             <motion.div
               whileHover={{ scale: 1.05, y: -2 }}
@@ -196,7 +196,7 @@ export default function Hero() {
             className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto"
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 1.8 }}
+            transition={{ duration: 0.5, delay: 0.9 }}
           >
             {[
               { icon: Award, number: '36+ Years', text: 'Professional Expertise', gradient: 'from-blue-500 to-blue-600', delay: 0 },
@@ -211,7 +211,7 @@ export default function Hero() {
                   data-testid={`stat-${index === 0 ? 'experience' : index === 1 ? 'banking' : 'certified'}`}
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.8, delay: 2 + stat.delay }}
+                  transition={{ duration: 0.4, delay: 1 + stat.delay }}
                   whileHover={{ 
                     y: -10, 
                     shadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
@@ -230,7 +230,7 @@ export default function Hero() {
                     className="text-3xl font-bold text-gray-900 mb-3"
                     initial={{ scale: 0.8 }}
                     animate={{ scale: 1 }}
-                    transition={{ duration: 0.5, delay: 2.2 + stat.delay }}
+                    transition={{ duration: 0.3, delay: 1.1 + stat.delay }}
                   >
                     {stat.number}
                   </motion.h3>
@@ -247,17 +247,17 @@ export default function Hero() {
         className="absolute bottom-8 left-1/2 transform -translate-x-1/2"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 3 }}
+        transition={{ delay: 1.5 }}
       >
         <motion.div
           animate={{ y: [0, 10, 0] }}
-          transition={{ duration: 2, repeat: Infinity }}
+          transition={{ duration: 1.5, repeat: Infinity }}
           className="w-6 h-10 border-2 border-blue-400 rounded-full flex justify-center"
         >
           <motion.div 
             className="w-1 h-3 bg-blue-400 rounded-full mt-2"
             animate={{ y: [0, 12, 0] }}
-            transition={{ duration: 2, repeat: Infinity }}
+            transition={{ duration: 1.5, repeat: Infinity }}
           />
         </motion.div>
       </motion.div>
