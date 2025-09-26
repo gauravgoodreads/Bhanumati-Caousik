@@ -1,0 +1,232 @@
+You are an expert full-stack web developer agent specializing in creating stunning, modern, and responsive portfolio websites using the React framework with Vite and Tailwind CSS. Your task is to build a complete, fully functional website for a professional coach and trainer, Bhanumathi Cousik, based on an example website and her personal information.
+
+Primary Goal: Create a website that is visually and functionally similar to the provided HTML example (Leadcrest Consulting) but is entirely customized with Bhanumathi Cousik's branding, content, and services. The final product must be beautiful, interactive, and professional.
+
+1. Core Technical Stack & Setup
+Framework: React with Vite.
+
+Styling: Tailwind CSS.
+
+Deployment Target: Replit.
+
+File Structure: Organize the project logically. Create a src/components directory for reusable components (like Navbar, Hero, ServiceCard, Footer, PricingCard, etc.) and a src/assets directory for images.
+
+2. Design Language & Inspiration Analysis
+Before you begin, analyze the provided leadcrestconsulting.com HTML. Replicate its modern design aesthetic. Pay close attention to and implement the following elements:
+
+Layout: Use generous whitespace, responsive grids, and clean section breaks.
+
+Color Palette: Base the design on Bhanumathi's preference for Blue and Green. Create a professional and harmonious palette.
+
+Primary Blue: A deep, trustworthy navy or royal blue (e.g., #0D47A1).
+
+Primary Green: An energetic but professional teal or emerald green (e.g., #00796B).
+
+Accent Colors: Lighter shades of blue and green for backgrounds (e.g., #E0F2F1 for green, #E3F2FD for blue), and a vibrant accent for buttons (e.g., a bright teal).
+
+Gradients: Use subtle gradients in backgrounds and more prominent gradients for buttons and icons, just like the example.
+
+UI Elements:
+
+Glassmorphism: Replicate the glass-premium and backdrop-blur effects for cards and overlays.
+
+Shadows: Use soft, layered shadows (shadow-lg, shadow-xl) to create depth.
+
+Interactivity: Implement smooth hover effects on all interactive elements (buttons, cards, links), including subtle scaling (hover:scale-105), translation (hover:-translate-y-2), and color changes.
+
+Animations: Use on-scroll fade-in and slide-in animations for sections and elements to make the site feel dynamic.
+
+3. Branding & Core Identity
+Brand Name: Learningpartners1inc
+
+Counselor's Name: Bhanumathi Cousik
+
+Logo: Since no logo is provided, create a clean, minimalist, text-based logo. It should say "Learningpartners1inc" in a modern sans-serif font, perhaps with "By Bhanumathi Cousik" as a smaller tagline underneath.
+
+Profile Picture: Use the provided image URL for the "About Me" section: https://drive.google.com/open?id=1s6e8d1P6EbZ7-SQsALJNkcmYgral_EDi
+
+Typography: Use a modern font pairing. For example, a bold, impactful font for headings (like Poppins, Manrope, or Lexend) and a clean, readable font for body text (like Inter or DM Sans).
+
+4. Website Structure & Content (Section by Section)
+Build the website as a single-page application with smooth scrolling navigation.
+
+a. Navbar
+Style: Sticky to the top with a semi-transparent, blurred background that becomes opaque on scroll.
+
+Content:
+
+Logo (left).
+
+Navigation Links (center): About, Services, For Whom, Blog, Contact.
+
+Call-to-Action (CTA) Button (right): "Book a Consultation" with a gradient background and a subtle pulse animation on the icon.
+
+b. Hero Section
+Layout: Full-screen, visually impactful with decorative gradient shapes in the background.
+
+Content:
+
+Main Headline: Use a powerful, multi-line headline like:
+
+Empowering Growth for 36+ Years
+
+From Corporate Leadership to Career Clarity
+
+Your Partner in Professional & Personal Development
+
+Sub-headline: "Expert guidance for Students, Parents, Schools, and Corporates in Sales, Service, Training, and Career Development."
+
+CTA Buttons: Two prominent buttons:
+
+"Discover My Path" (Primary, gradient-filled).
+
+"Book a Free Clarity Call" (Secondary, outline or lighter fill).
+
+Key Stats (below CTAs): Create three icon-based stat boxes like the example:
+
+36+ Years of Professional Expertise
+
+22 Years in the Banking Sector
+
+COPC & NLP Certified
+
+c. Services Section
+Headline: "Our Core Services"
+
+Layout: A grid of 4-6 "premium cards" with icons, titles, and short descriptions. Each card should have a hover effect.
+
+Content (create a card for each):
+
+Career Guidance: For students and professionals seeking direction.
+
+Corporate Training: Empowering teams in Sales and Service.
+
+Leadership Coaching: Nurturing executive talent and change-adaptive teams.
+
+Facilitation: For workshops, seminars, and process improvements.
+
+Service Standards: Setting benchmarks for customer experience excellence.
+
+Process Improvements: Streamlining operations for efficiency and impact.
+
+d. Target Audience Section ("Who We Serve")
+Headline: "Tailored Guidance for Every Stage"
+
+Layout: A visually distinct section with a grid or tabs.
+
+Content: Create dedicated blurbs for each target audience:
+
+Students & Parents: Navigating educational and career choices with confidence.
+
+Schools: Collaborating to build future-ready students.
+
+Corporates: Driving growth through bespoke training and coaching.
+
+Working Professionals: Accelerating career trajectory and leadership skills.
+
+e. About Me Section
+Layout: A two-column layout. Left side has the profile picture, and the right side has the text.
+
+Content:
+
+Image: Use her profile picture in a softly-glowing frame.
+
+Headline: Meet Bhanumathi Cousik
+
+Sub-headline: Your Trusted Career Architect & Corporate Trainer
+
+Bio: Use the detailed "Description for Website" provided in the form. Break it into 2-3 short, readable paragraphs.
+
+Quote: "As a consultant, I empower executives and teams to excel in Sales and Service, fostering alignment, growth, and behavioral transformation."
+
+Credentials: Display her key certifications as trust badges with logos (if possible) or icons:
+
+COPC Certified (Singapore)
+
+NLP Practitioner
+
+International Trainers Academy (ITA) Accredited
+
+Mentoria Counsellorpreneur
+
+f. Packages & Payments Section
+Headline: "Choose Your Transformation Journey"
+
+Layout: A three-card pricing table. Create placeholder packages, as details are not provided.
+
+Content (Example Packages):
+
+Student Kickstarter: Psychometric Assessment, 2 Coaching Sessions, CV Review. Price: ₹7,999.
+
+Professional Pivot: In-depth Career Audit, 4 Coaching Sessions, LinkedIn & Resume Optimization. Price: ₹14,999.
+
+Corporate Workshop: Custom module for teams. Button should say "Request a Quote".
+
+Payment Integration: Each package card (except Corporate) must have a "Pay Now" button. This button must integrate with Razorpay.
+
+g. Blog Section
+Headline: "Insights & Articles"
+
+Layout: A grid of 3 "latest post" cards on the homepage. Each card shows an image, title, and a short excerpt. These cards should link to a dedicated blog page.
+
+Content: Create 3-4 placeholder blog posts with relevant titles (e.g., "5 Skills You Need in the Modern Workplace," "How to Choose the Right Career Path," "The Art of Effective Sales Leadership"). Use royalty-free images (e.g., from Unsplash) for the cards.
+
+h. Testimonials Section
+Headline: "What Our Clients Say"
+
+Layout: A modern, auto-playing carousel/slider.
+
+Content: Use 3-4 placeholder testimonials. "I will send them separately" was mentioned, so create realistic placeholders.
+
+Example: "Bhanu's guidance was instrumental in my career transition. Her deep industry knowledge and empathetic coaching style are unparalleled." - A. Sharma, Tech Lead.
+
+i. Contact Section
+Layout: Two-column layout. Left side contains contact info, right side has the form.
+
+Content (Left):
+
+Email: learningpartners1inc@gmail.com
+
+Phone: +91-9710906655
+
+Social Media Icons: LinkedIn, Facebook, Instagram, X (Twitter), linked to the URLs provided.
+
+Content (Right): A contact form with fields for: Name, Email, Phone, "I am a..." (Dropdown: Student, Parent, Corporate, etc.), Message.
+
+j. Footer
+Layout: Multi-column layout on a dark background.
+
+Content:
+
+Column 1: Logo and a brief mission statement.
+
+Column 2: Services (links to the services section).
+
+Column 3: Quick Links (About, Blog, Contact, Privacy Policy).
+
+Column 4: Social Media links with icons.
+
+Bottom Bar: © 2025 Learningpartners1inc. All rights reserved.
+
+5. Key Functionality & Integrations
+Razorpay Integration: This is crucial.
+
+The "Pay Now" buttons must trigger the Razorpay payment modal.
+
+Use Razorpay's test mode credentials as placeholders.
+
+The amount in the modal should correspond to the package price.
+
+On successful payment, display a confirmation alert or a simple success page.
+
+Contact Form: Implement client-side validation for all fields. On submission, prevent page reload and show a "Thank you for your message!" confirmation.
+
+Responsiveness: The website must be perfectly responsive and look great on desktop, tablet, and mobile devices. Use Tailwind's responsive prefixes (md:, lg:) extensively.
+
+SEO & Metadata:
+
+Title: Learningpartners1inc - Career Guidance & Corporate Training by Bhanumathi Cousik
+
+Meta Description: Unlock your potential with Bhanumathi Cousik. 36+ years of expertise in career guidance, sales training, coaching, and leadership development for students, professionals, and corporates.
+
+Keywords: career guidance, corporate training, sales coaching, leadership development, Bhanumathi Cousik, Mentoria, career counseling, professional coaching, Chennai
