@@ -11,7 +11,7 @@ export default function Hero() {
   };
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-green-50 overflow-hidden">
+    <section className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-green-50 overflow-hidden py-36">
       {/* Enhanced Background Decorative Elements */}
       <div className="absolute inset-0 opacity-20">
         <motion.div 
