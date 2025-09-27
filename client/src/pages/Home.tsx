@@ -7,6 +7,7 @@ import Packages from '@/components/Packages';
 import Blog from '@/components/Blog';
 import Testimonials from '@/components/Testimonials';
 import Contact from '@/components/Contact';
+import Partnership from '@/components/Partnership';
 import Footer from '@/components/Footer';
 
 export default function Home() {
@@ -22,6 +23,7 @@ export default function Home() {
         <Blog />
         <Testimonials />
         <Contact />
+        <Partnership />
       </main>
       <Footer />
     </div>
