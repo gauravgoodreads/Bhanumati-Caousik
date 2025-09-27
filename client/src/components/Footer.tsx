@@ -155,6 +155,9 @@ export default function Footer() {
           <p className="text-gray-400" data-testid="footer-copyright">
             © {currentYear} Learningpartners1inc. All rights reserved.
           </p>
+          <p className="text-gray-500 text-sm mt-2" data-testid="footer-partnership">
+            In partnership with Mentoria for enhanced career guidance services.
+          </p>
         </div>
       </div>
     </footer>
