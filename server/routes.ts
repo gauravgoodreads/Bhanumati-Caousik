@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { z } from "zod";
 import bcrypt from 'bcryptjs';
 import session from 'express-session';
+import connectPgSimple from 'connect-pg-simple';
 
 // Extend session data interface
 declare module 'express-session' {
@@ -22,14 +23,29 @@ import {
   insertContactMessageSchema,
 } from '@shared/schema';
 
+// PostgreSQL session store
+const PgSession = connectPgSimple(session);
+
 // Session middleware for admin authentication
 const sessionMiddleware = session({
-  secret: process.env.SESSION_SECRET || 'fallback-secret-key',
+  store: new PgSession({
+    conString: process.env.DATABASE_URL,
+    tableName: 'session',
+    createTableIfMissing: true,
+  }),
+  secret: process.env.SESSION_SECRET || (() => {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('SESSION_SECRET environment variable is required in production');
+    }
+    console.warn('Warning: Using fallback session secret. Set SESSION_SECRET environment variable.');
+    return 'fallback-secret-key-development-only';
+  })(),
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: false, // Set to true in production with HTTPS
+    secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
+    sameSite: 'lax',
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
 });
@@ -55,6 +71,9 @@ function validateBody(schema: z.ZodSchema) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Trust proxy for secure cookies behind reverse proxy
+  app.set('trust proxy', 1);
+  
   // Configure session middleware
   app.use(sessionMiddleware);
 
@@ -64,16 +83,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { email, password } = req.body;
       
       const admin = await storage.getAdminUserByEmail(email);
-      if (!admin || !await bcrypt.compare(password, admin.password)) {
+      if (!admin || !admin.isActive || !await bcrypt.compare(password, admin.password)) {
         return res.status(401).json({ error: 'Invalid credentials' });
       }
 
-      req.session.adminId = admin.id;
-      // Update last login time - omit from the partial update since it's computed
-      await storage.updateAdminUser(admin.id, { isActive: true });
-      
-      res.json({ message: 'Login successful', admin: { id: admin.id, name: admin.name, email: admin.email, role: admin.role } });
+      // Regenerate session ID to prevent session fixation attacks
+      req.session.regenerate((err) => {
+        if (err) {
+          return res.status(500).json({ error: 'Login failed' });
+        }
+
+        req.session.adminId = admin.id;
+        req.session.save((err) => {
+          if (err) {
+            return res.status(500).json({ error: 'Login failed' });
+          }
+
+          // Update last login time
+          storage.updateAdminUser(admin.id, { 
+            isActive: true
+          }).catch(console.error);
+
+          res.json({ 
+            message: 'Login successful', 
+            admin: { id: admin.id, name: admin.name, email: admin.email, role: admin.role } 
+          });
+        });
+      });
     } catch (error) {
+      console.error('Login error:', error);
       res.status(500).json({ error: 'Login failed' });
     }
   });
@@ -90,13 +128,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
-      const admin = await storage.getAdminUserByEmail('admin@learningpartners1inc.com');
-      if (!admin) {
-        return res.status(401).json({ error: 'Admin not found' });
+      // Find admin by ID stored in session (proper source of truth)
+      const admin = await storage.getAdminUserById(req.session.adminId);
+      if (!admin || !admin.isActive) {
+        return res.status(401).json({ error: 'Admin not found or inactive' });
       }
       
       res.json({ admin: { id: admin.id, name: admin.name, email: admin.email, role: admin.role } });
     } catch (error) {
+      console.error('Auth me error:', error);
       res.status(500).json({ error: 'Failed to get user info' });
     }
   });
@@ -511,6 +551,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(message);
     } catch (error) {
       res.status(500).json({ error: 'Failed to update contact message' });
+    }
+  });
+
+  // Admin-specific routes (include inactive items)
+  app.get('/api/admin/services', requireAuth, async (req, res) => {
+    try {
+      const services = await storage.getAllServices(); // Get all services including inactive
+      res.json(services);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to get services' });
+    }
+  });
+
+  app.get('/api/admin/packages', requireAuth, async (req, res) => {
+    try {
+      const packages = await storage.getAllPackages(); // Get all packages including inactive
+      res.json(packages);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to get packages' });
+    }
+  });
+
+  app.get('/api/admin/blog', requireAuth, async (req, res) => {
+    try {
+      const posts = await storage.getBlogPosts(false); // Get all posts, including unpublished
+      res.json(posts);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to get blog posts' });
+    }
+  });
+
+  app.get('/api/admin/testimonials', requireAuth, async (req, res) => {
+    try {
+      const testimonials = await storage.getTestimonials(false); // Get all testimonials, including inactive
+      res.json(testimonials);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to get testimonials' });
     }
   });
 

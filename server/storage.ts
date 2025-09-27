@@ -20,6 +20,7 @@ const db = drizzle(sql_client, { schema });
 export interface IStorage {
   // Services
   getServices(): Promise<Service[]>;
+  getAllServices(): Promise<Service[]>;
   getServiceById(id: string): Promise<Service | null>;
   createService(service: InsertService): Promise<Service>;
   updateService(id: string, service: Partial<InsertService>): Promise<Service | null>;
@@ -27,6 +28,7 @@ export interface IStorage {
 
   // Packages
   getPackages(): Promise<Package[]>;
+  getAllPackages(): Promise<Package[]>;
   getPackageById(id: string): Promise<Package | null>;
   createPackage(pkg: InsertPackage): Promise<Package>;
   updatePackage(id: string, pkg: Partial<InsertPackage>): Promise<Package | null>;
@@ -77,6 +79,7 @@ export interface IStorage {
 
   // Admin Users
   getAdminUserByEmail(email: string): Promise<AdminUser | null>;
+  getAdminUserById(id: string): Promise<AdminUser | null>;
   createAdminUser(user: InsertAdminUser): Promise<AdminUser>;
   updateAdminUser(id: string, user: Partial<InsertAdminUser>): Promise<AdminUser | null>;
 }
@@ -86,6 +89,11 @@ export class DbStorage implements IStorage {
   async getServices(): Promise<Service[]> {
     return await db.select().from(schema.services)
       .where(eq(schema.services.isActive, true))
+      .orderBy(schema.services.sortOrder, schema.services.createdAt);
+  }
+
+  async getAllServices(): Promise<Service[]> {
+    return await db.select().from(schema.services)
       .orderBy(schema.services.sortOrder, schema.services.createdAt);
   }
 
@@ -124,6 +132,11 @@ export class DbStorage implements IStorage {
   async getPackages(): Promise<Package[]> {
     return await db.select().from(schema.packages)
       .where(eq(schema.packages.isActive, true))
+      .orderBy(schema.packages.sortOrder, schema.packages.createdAt);
+  }
+
+  async getAllPackages(): Promise<Package[]> {
+    return await db.select().from(schema.packages)
       .orderBy(schema.packages.sortOrder, schema.packages.createdAt);
   }
 
@@ -399,6 +412,12 @@ export class DbStorage implements IStorage {
   async getAdminUserByEmail(email: string): Promise<AdminUser | null> {
     const results = await db.select().from(schema.adminUsers)
       .where(eq(schema.adminUsers.email, email));
+    return results[0] || null;
+  }
+
+  async getAdminUserById(id: string): Promise<AdminUser | null> {
+    const results = await db.select().from(schema.adminUsers)
+      .where(eq(schema.adminUsers.id, id));
     return results[0] || null;
   }
 
