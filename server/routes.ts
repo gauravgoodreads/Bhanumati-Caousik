@@ -780,6 +780,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/admin/workshop-bookings', requireAuth, async (req, res) => {
+    try {
+      const bookings = await storage.getWorkshopBookings();
+      res.json(bookings);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to get workshop bookings' });
+    }
+  });
+
+  app.get('/api/admin/package-inquiries', requireAuth, async (req, res) => {
+    try {
+      const inquiries = await storage.getPackageInquiries();
+      res.json(inquiries);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to get package inquiries' });
+    }
+  });
+
+  app.get('/api/admin/payment-orders', requireAuth, async (req, res) => {
+    try {
+      const orders = await storage.getPaymentOrders();
+      res.json(orders);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to get payment orders' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

@@ -16,13 +16,17 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import type { AdminUser, Service, Package as PackageType, BlogPost, Testimonial } from '@shared/schema';
+import type { AdminUser, Service, Package as PackageType, BlogPost, Testimonial, WorkshopBooking, PackageInquiry, PaymentOrder } from '@shared/schema';
 
 interface DashboardStats {
   services: number;
   packages: number;
   blogPosts: number;
   testimonials: number;
+  workshopBookings: number;
+  packageInquiries: number;
+  totalRevenue: number;
+  pendingPayments: number;
 }
 
 export default function AdminDashboard() {
@@ -53,6 +57,22 @@ export default function AdminDashboard() {
 
   const { data: testimonials = [] } = useQuery<Testimonial[]>({
     queryKey: ['/api/admin/testimonials'],
+    enabled: !!adminUser,
+  });
+
+  // Get booking and payment data for enhanced analytics
+  const { data: workshopBookings = [] } = useQuery<WorkshopBooking[]>({
+    queryKey: ['/api/admin/workshop-bookings'],
+    enabled: !!adminUser,
+  });
+
+  const { data: packageInquiries = [] } = useQuery<PackageInquiry[]>({
+    queryKey: ['/api/admin/package-inquiries'],
+    enabled: !!adminUser,
+  });
+
+  const { data: paymentOrders = [] } = useQuery<PaymentOrder[]>({
+    queryKey: ['/api/admin/payment-orders'],
     enabled: !!adminUser,
   });
 
@@ -101,7 +121,13 @@ export default function AdminDashboard() {
     services: services.length,
     packages: packages.length,
     blogPosts: blogPosts.length,
-    testimonials: testimonials.length
+    testimonials: testimonials.length,
+    workshopBookings: workshopBookings.length,
+    packageInquiries: packageInquiries.length,
+    totalRevenue: paymentOrders
+      .filter(order => order.status === 'completed')
+      .reduce((total, order) => total + parseFloat(order.expectedAmount), 0),
+    pendingPayments: paymentOrders.filter(order => order.status === 'pending').length
   };
 
   const statCards = [
@@ -132,6 +158,34 @@ export default function AdminDashboard() {
       icon: MessageSquare,
       color: 'from-orange-500 to-red-600',
       description: 'Client testimonials'
+    },
+    {
+      title: 'Workshop Bookings',
+      value: stats.workshopBookings,
+      icon: Calendar,
+      color: 'from-cyan-500 to-teal-600',
+      description: 'Total bookings'
+    },
+    {
+      title: 'Package Inquiries',
+      value: stats.packageInquiries,
+      icon: MessageSquare,
+      color: 'from-rose-500 to-pink-600',
+      description: 'Customer inquiries'
+    },
+    {
+      title: 'Total Revenue',
+      value: `₹${stats.totalRevenue.toLocaleString()}`,
+      icon: TrendingUp,
+      color: 'from-emerald-500 to-green-600',
+      description: 'Completed payments'
+    },
+    {
+      title: 'Pending Payments',
+      value: stats.pendingPayments,
+      icon: Package,
+      color: 'from-amber-500 to-orange-600',
+      description: 'Awaiting payment'
     }
   ];
 
@@ -280,24 +334,139 @@ export default function AdminDashboard() {
           </div>
         </motion.div>
 
-        {/* Recent Activity Placeholder */}
+        {/* Recent Activity */}
         <motion.div
-          className="mt-8"
+          className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.8 }}
+        >
+          {/* Recent Workshop Bookings */}
+          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Calendar className="h-5 w-5 text-blue-600" />
+                <span>Recent Workshop Bookings</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {workshopBookings.slice(0, 3).length > 0 ? (
+                workshopBookings.slice(0, 3).map((booking) => (
+                  <div key={booking.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <p className="font-medium text-gray-900" data-testid={`booking-customer-${booking.id}`}>
+                        {booking.customerName}
+                      </p>
+                      <p className="text-sm text-gray-600">{booking.customerEmail}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-medium text-green-600">₹{booking.amount}</p>
+                      <p className="text-xs text-gray-500">
+                        {new Date(booking.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-4 text-gray-500">
+                  <Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No recent workshop bookings</p>
+                </div>
+              )}
+              {workshopBookings.length > 3 && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="w-full" 
+                  onClick={() => setLocation('/admin/workshops')}
+                  data-testid="button-view-all-bookings"
+                >
+                  View all {workshopBookings.length} bookings
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Recent Package Inquiries */}
+          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <MessageSquare className="h-5 w-5 text-blue-600" />
+                <span>Recent Package Inquiries</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {packageInquiries.slice(0, 3).length > 0 ? (
+                packageInquiries.slice(0, 3).map((inquiry) => (
+                  <div key={inquiry.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <p className="font-medium text-gray-900" data-testid={`inquiry-customer-${inquiry.id}`}>
+                        {inquiry.customerName}
+                      </p>
+                      <p className="text-sm text-gray-600">{inquiry.customerEmail}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-gray-500">
+                        {new Date(inquiry.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-4 text-gray-500">
+                  <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No recent package inquiries</p>
+                </div>
+              )}
+              {packageInquiries.length > 3 && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="w-full" 
+                  onClick={() => setLocation('/admin/inquiries')}
+                  data-testid="button-view-all-inquiries"
+                >
+                  View all {packageInquiries.length} inquiries
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Payment Overview */}
+        <motion.div
+          className="mt-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 1.0 }}
         >
           <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <TrendingUp className="h-5 w-5 text-blue-600" />
-                <span>Recent Activity</span>
+                <span>Payment Overview</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8 text-gray-500">
-                <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>Activity tracking will be implemented in the next phase</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="text-center p-4 bg-green-50 rounded-lg">
+                  <p className="text-2xl font-bold text-green-600" data-testid="completed-payments-count">
+                    {paymentOrders.filter(order => order.status === 'completed').length}
+                  </p>
+                  <p className="text-sm text-gray-600">Completed Payments</p>
+                </div>
+                <div className="text-center p-4 bg-amber-50 rounded-lg">
+                  <p className="text-2xl font-bold text-amber-600" data-testid="pending-payments-count">
+                    {paymentOrders.filter(order => order.status === 'pending').length}
+                  </p>
+                  <p className="text-sm text-gray-600">Pending Payments</p>
+                </div>
+                <div className="text-center p-4 bg-red-50 rounded-lg">
+                  <p className="text-2xl font-bold text-red-600" data-testid="failed-payments-count">
+                    {paymentOrders.filter(order => order.status === 'failed').length}
+                  </p>
+                  <p className="text-sm text-gray-600">Failed Payments</p>
+                </div>
               </div>
             </CardContent>
           </Card>

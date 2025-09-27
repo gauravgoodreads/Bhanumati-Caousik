@@ -86,6 +86,7 @@ export interface IStorage {
   updateAdminUser(id: string, user: Partial<InsertAdminUser>): Promise<AdminUser | null>;
 
   // Payment Orders
+  getPaymentOrders(): Promise<PaymentOrder[]>;
   createPaymentOrder(order: InsertPaymentOrder): Promise<PaymentOrder>;
   getPaymentOrderByRazorpayId(razorpayOrderId: string): Promise<PaymentOrder | null>;
   updatePaymentOrderStatus(id: string, status: string, paymentId?: string): Promise<PaymentOrder | null>;
@@ -460,6 +461,11 @@ export class DbStorage implements IStorage {
   }
 
   // Payment Orders
+  async getPaymentOrders(): Promise<PaymentOrder[]> {
+    return await db.select().from(schema.paymentOrders)
+      .orderBy(desc(schema.paymentOrders.createdAt));
+  }
+
   async createPaymentOrder(order: InsertPaymentOrder): Promise<PaymentOrder> {
     const results = await db.insert(schema.paymentOrders)
       .values({
