@@ -20,7 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import type { Package } from '@shared/schema';
+import type { Package, InsertPackage } from '@shared/schema';
 import { insertPackageSchema } from '@shared/schema';
 import {
   Dialog,
@@ -551,7 +551,7 @@ export default function AdminPackages() {
 
             <div>
               <div className="flex justify-between items-center mb-2">
-                <Label>Features</Label>
+                <FormLabel>Features</FormLabel>
                 <Button
                   type="button"
                   variant="outline"
