@@ -19,7 +19,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
-import type { Service, InsertService } from '@shared/schema';
+import type { Service } from '@shared/schema';
+import { insertServiceSchema } from '@shared/schema';
 import {
   Dialog,
   DialogContent,
@@ -27,10 +28,27 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const ICON_OPTIONS = [
   'Users', 'Target', 'TrendingUp', 'Brain', 'Lightbulb', 'MessageCircle', 
@@ -46,15 +64,12 @@ const COLOR_OPTIONS = [
   { value: 'teal', label: 'Teal' }
 ];
 
-interface ServiceFormData {
-  title: string;
-  description: string;
-  icon: string;
-  color: string;
-  features: string[];
-  isActive: boolean;
-  sortOrder: number;
-}
+// Form schema with extended validation
+const serviceFormSchema = insertServiceSchema.extend({
+  features: z.array(z.string().min(1, 'Feature cannot be empty')).min(1, 'At least one feature is required')
+});
+
+type ServiceFormData = z.infer<typeof serviceFormSchema>;
 
 export default function AdminServices() {
   const [, setLocation] = useLocation();
@@ -63,14 +78,18 @@ export default function AdminServices() {
   
   const [showDialog, setShowDialog] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
-  const [formData, setFormData] = useState<ServiceFormData>({
-    title: '',
-    description: '',
-    icon: 'Users',
-    color: 'blue',
-    features: [''],
-    isActive: true,
-    sortOrder: 0
+  
+  const form = useForm<ServiceFormData>({
+    resolver: zodResolver(serviceFormSchema),
+    defaultValues: {
+      title: '',
+      description: '',
+      icon: 'Users',
+      color: 'blue',
+      features: [''],
+      isActive: true,
+      sortOrder: 0
+    }
   });
 
   // Fetch services
@@ -145,7 +164,7 @@ export default function AdminServices() {
   });
 
   const resetForm = () => {
-    setFormData({
+    form.reset({
       title: '',
       description: '',
       icon: 'Users',
@@ -159,13 +178,21 @@ export default function AdminServices() {
 
   const openCreateDialog = () => {
     resetForm();
-    setFormData(prev => ({ ...prev, sortOrder: services.length }));
+    form.reset({
+      title: '',
+      description: '',
+      icon: 'Users',
+      color: 'blue',
+      features: [''],
+      isActive: true,
+      sortOrder: services.length
+    });
     setShowDialog(true);
   };
 
   const openEditDialog = (service: Service) => {
     setEditingService(service);
-    setFormData({
+    form.reset({
       title: service.title,
       description: service.description,
       icon: service.icon,
@@ -177,12 +204,10 @@ export default function AdminServices() {
     setShowDialog(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const cleanFeatures = formData.features.filter(f => f.trim() !== '');
+  const onSubmit = (data: ServiceFormData) => {
+    const cleanFeatures = data.features.filter(f => f.trim() !== '');
     const submitData = {
-      ...formData,
+      ...data,
       features: cleanFeatures
     };
 
@@ -194,19 +219,22 @@ export default function AdminServices() {
   };
 
   const handleFeatureChange = (index: number, value: string) => {
-    const newFeatures = [...formData.features];
+    const currentFeatures = form.getValues('features');
+    const newFeatures = [...currentFeatures];
     newFeatures[index] = value;
-    setFormData({ ...formData, features: newFeatures });
+    form.setValue('features', newFeatures);
   };
 
   const addFeature = () => {
-    setFormData({ ...formData, features: [...formData.features, ''] });
+    const currentFeatures = form.getValues('features');
+    form.setValue('features', [...currentFeatures, '']);
   };
 
   const removeFeature = (index: number) => {
-    if (formData.features.length > 1) {
-      const newFeatures = formData.features.filter((_, i) => i !== index);
-      setFormData({ ...formData, features: newFeatures });
+    const currentFeatures = form.getValues('features');
+    if (currentFeatures.length > 1) {
+      const newFeatures = currentFeatures.filter((_, i) => i !== index);
+      form.setValue('features', newFeatures);
     }
   };
 
@@ -386,122 +414,176 @@ export default function AdminServices() {
             </DialogTitle>
           </DialogHeader>
           
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="title">Title</Label>
-                <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  required
-                  data-testid="input-title"
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Title</FormLabel>
+                      <FormControl>
+                        <Input 
+                          {...field} 
+                          data-testid="input-title"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="sortOrder"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Sort Order</FormLabel>
+                      <FormControl>
+                        <Input 
+                          {...field}
+                          type="number"
+                          onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                          data-testid="input-sort-order"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
               </div>
-              <div>
-                <Label htmlFor="sortOrder">Sort Order</Label>
-                <Input
-                  id="sortOrder"
-                  type="number"
-                  value={formData.sortOrder}
-                  onChange={(e) => setFormData({ ...formData, sortOrder: parseInt(e.target.value) || 0 })}
-                  data-testid="input-sort-order"
-                />
-              </div>
-            </div>
 
-            <div>
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                rows={3}
-                required
-                data-testid="textarea-description"
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        {...field}
+                        rows={3}
+                        data-testid="textarea-description"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="icon">Icon</Label>
-                <select
-                  id="icon"
-                  value={formData.icon}
-                  onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
-                  className="w-full p-2 border rounded-md"
-                  data-testid="select-icon"
-                >
-                  {ICON_OPTIONS.map(icon => (
-                    <option key={icon} value={icon}>{icon}</option>
-                  ))}
-                </select>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="icon"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Icon</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-icon">
+                            <SelectValue placeholder="Select an icon" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {ICON_OPTIONS.map(icon => (
+                            <SelectItem key={icon} value={icon}>{icon}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="color"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Color</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-color">
+                            <SelectValue placeholder="Select a color" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {COLOR_OPTIONS.map(color => (
+                            <SelectItem key={color.value} value={color.value}>{color.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
-              <div>
-                <Label htmlFor="color">Color</Label>
-                <select
-                  id="color"
-                  value={formData.color}
-                  onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                  className="w-full p-2 border rounded-md"
-                  data-testid="select-color"
-                >
-                  {COLOR_OPTIONS.map(color => (
-                    <option key={color.value} value={color.value}>{color.label}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
 
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <Label>Features</Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addFeature}
-                  data-testid="button-add-feature"
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add Feature
-                </Button>
-              </div>
-              <div className="space-y-2">
-                {formData.features.map((feature, index) => (
-                  <div key={index} className="flex items-center space-x-2">
-                    <Input
-                      value={feature}
-                      onChange={(e) => handleFeatureChange(index, e.target.value)}
-                      placeholder="Feature description"
-                      data-testid={`input-feature-${index}`}
-                    />
-                    {formData.features.length > 1 && (
+              <FormField
+                control={form.control}
+                name="features"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex justify-between items-center mb-2">
+                      <FormLabel>Features</FormLabel>
                       <Button
                         type="button"
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
-                        onClick={() => removeFeature(index)}
-                        data-testid={`button-remove-feature-${index}`}
+                        onClick={addFeature}
+                        data-testid="button-add-feature"
                       >
-                        <X className="h-4 w-4" />
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add Feature
                       </Button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="isActive"
-                checked={formData.isActive}
-                onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
-                data-testid="switch-active"
+                    </div>
+                    <div className="space-y-2">
+                      {field.value.map((feature, index) => (
+                        <div key={index} className="flex items-center space-x-2">
+                          <Input
+                            value={feature}
+                            onChange={(e) => handleFeatureChange(index, e.target.value)}
+                            placeholder="Feature description"
+                            data-testid={`input-feature-${index}`}
+                          />
+                          {field.value.length > 1 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeFeature(index)}
+                              data-testid={`button-remove-feature-${index}`}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              <Label htmlFor="isActive">Active</Label>
-            </div>
-          </form>
+
+              <FormField
+                control={form.control}
+                name="isActive"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">Active</FormLabel>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        data-testid="switch-active"
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            </form>
+          </Form>
 
           <DialogFooter>
             <Button
@@ -512,7 +594,8 @@ export default function AdminServices() {
               Cancel
             </Button>
             <Button
-              onClick={handleSubmit}
+              type="submit"
+              onClick={form.handleSubmit(onSubmit)}
               disabled={createMutation.isPending || updateMutation.isPending}
               data-testid="button-save"
             >
