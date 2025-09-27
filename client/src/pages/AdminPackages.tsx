@@ -564,7 +564,7 @@ export default function AdminPackages() {
                 </Button>
               </div>
               <div className="space-y-2">
-                {formData.features.map((feature, index) => (
+                {form.watch('features').map((feature, index) => (
                   <div key={index} className="flex items-center space-x-2">
                     <Input
                       value={feature}
@@ -572,7 +572,7 @@ export default function AdminPackages() {
                       placeholder="Feature description"
                       data-testid={`input-feature-${index}`}
                     />
-                    {formData.features.length > 1 && (
+                    {form.watch('features').length > 1 && (
                       <Button
                         type="button"
                         variant="ghost"
@@ -588,38 +588,60 @@ export default function AdminPackages() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="sortOrder">Sort Order</Label>
-                <Input
-                  id="sortOrder"
-                  type="number"
-                  value={formData.sortOrder}
-                  onChange={(e) => setFormData({ ...formData, sortOrder: parseInt(e.target.value) || 0 })}
-                  data-testid="input-sort-order"
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="sortOrder"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Sort Order</FormLabel>
+                      <FormControl>
+                        <Input 
+                          {...field}
+                          type="number"
+                          onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                          data-testid="input-sort-order"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              <div className="flex items-center space-x-6 pt-6">
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="isActive"
-                    checked={formData.isActive}
-                    onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
-                    data-testid="switch-active"
+                <div className="flex items-center space-x-6 pt-6">
+                  <FormField
+                    control={form.control}
+                    name="isActive"
+                    render={({ field }) => (
+                      <FormItem className="flex items-center space-x-2">
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            data-testid="switch-active"
+                          />
+                        </FormControl>
+                        <FormLabel>Active</FormLabel>
+                      </FormItem>
+                    )}
                   />
-                  <Label htmlFor="isActive">Active</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="isPopular"
-                    checked={formData.isPopular}
-                    onCheckedChange={(checked) => setFormData({ ...formData, isPopular: checked })}
-                    data-testid="switch-popular"
+                  <FormField
+                    control={form.control}
+                    name="isPopular"
+                    render={({ field }) => (
+                      <FormItem className="flex items-center space-x-2">
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            data-testid="switch-popular"
+                          />
+                        </FormControl>
+                        <FormLabel>Popular</FormLabel>
+                      </FormItem>
+                    )}
                   />
-                  <Label htmlFor="isPopular">Popular</Label>
                 </div>
               </div>
-            </div>
           </form>
           </Form>
 

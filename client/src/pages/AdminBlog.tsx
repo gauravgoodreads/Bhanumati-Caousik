@@ -22,7 +22,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import type { BlogPost, InsertBlogPost } from '@shared/schema';
+import type { BlogPost } from '@shared/schema';
+import { insertBlogPostSchema } from '@shared/schema';
 import {
   Dialog,
   DialogContent,
@@ -34,22 +35,36 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const CATEGORY_OPTIONS = [
   'coaching', 'leadership', 'productivity', 'mindset', 'career', 'business', 'wellness', 'tips'
 ];
 
-interface BlogFormData {
-  title: string;
-  excerpt: string;
-  content: string;
-  slug: string;
-  imageUrl: string;
-  tags: string[];
-  category: string;
-  isPublished: boolean;
-  readTime: number;
-}
+// Form schema with extended validation
+const blogFormSchema = insertBlogPostSchema.extend({
+  tags: z.array(z.string().min(1, 'Tag cannot be empty')).min(1, 'At least one tag is required'),
+  readTime: z.coerce.number().min(1, 'Read time must be at least 1 minute')
+});
+
+type BlogFormData = z.infer<typeof blogFormSchema>;
 
 export default function AdminBlog() {
   const [, setLocation] = useLocation();
@@ -58,16 +73,20 @@ export default function AdminBlog() {
   
   const [showDialog, setShowDialog] = useState(false);
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
-  const [formData, setFormData] = useState<BlogFormData>({
-    title: '',
-    excerpt: '',
-    content: '',
-    slug: '',
-    imageUrl: '',
-    tags: [''],
-    category: 'coaching',
-    isPublished: false,
-    readTime: 5
+  
+  const form = useForm<BlogFormData>({
+    resolver: zodResolver(blogFormSchema),
+    defaultValues: {
+      title: '',
+      excerpt: '',
+      content: '',
+      slug: '',
+      imageUrl: '',
+      tags: [''],
+      category: 'coaching',
+      isPublished: false,
+      readTime: 5
+    }
   });
 
   // Fetch blog posts
@@ -77,7 +96,7 @@ export default function AdminBlog() {
 
   // Create mutation
   const createMutation = useMutation({
-    mutationFn: (data: Omit<InsertBlogPost, 'id' | 'createdAt' | 'updatedAt' | 'viewCount'>) => 
+    mutationFn: (data: Omit<BlogFormData, 'id' | 'createdAt' | 'updatedAt' | 'viewCount'>) => 
       apiRequest('POST', '/api/blog', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/blog'] });
@@ -100,7 +119,7 @@ export default function AdminBlog() {
 
   // Update mutation
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string, data: Partial<InsertBlogPost> }) => 
+    mutationFn: ({ id, data }: { id: string, data: Partial<BlogFormData> }) => 
       apiRequest('PUT', `/api/blog/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/blog'] });
@@ -142,7 +161,7 @@ export default function AdminBlog() {
   });
 
   const resetForm = () => {
-    setFormData({
+    form.reset({
       title: '',
       excerpt: '',
       content: '',
@@ -166,21 +185,31 @@ export default function AdminBlog() {
   };
 
   const handleTitleChange = (title: string) => {
-    setFormData({ 
-      ...formData, 
-      title,
-      slug: editingPost ? formData.slug : generateSlug(title)
-    });
+    form.setValue('title', title);
+    if (!editingPost) {
+      form.setValue('slug', generateSlug(title));
+    }
   };
 
   const openCreateDialog = () => {
     resetForm();
+    form.reset({
+      title: '',
+      excerpt: '',
+      content: '',
+      slug: '',
+      imageUrl: '',
+      tags: [''],
+      category: 'coaching',
+      isPublished: false,
+      readTime: 5
+    });
     setShowDialog(true);
   };
 
   const openEditDialog = (post: BlogPost) => {
     setEditingPost(post);
-    setFormData({
+    form.reset({
       title: post.title,
       excerpt: post.excerpt,
       content: post.content,
@@ -194,12 +223,10 @@ export default function AdminBlog() {
     setShowDialog(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const cleanTags = formData.tags.filter(t => t.trim() !== '');
+  const onSubmit = (data: BlogFormData) => {
+    const cleanTags = data.tags.filter(t => t.trim() !== '');
     const submitData = {
-      ...formData,
+      ...data,
       tags: cleanTags
     };
 
@@ -211,19 +238,22 @@ export default function AdminBlog() {
   };
 
   const handleTagChange = (index: number, value: string) => {
-    const newTags = [...formData.tags];
+    const currentTags = form.getValues('tags');
+    const newTags = [...currentTags];
     newTags[index] = value;
-    setFormData({ ...formData, tags: newTags });
+    form.setValue('tags', newTags);
   };
 
   const addTag = () => {
-    setFormData({ ...formData, tags: [...formData.tags, ''] });
+    const currentTags = form.getValues('tags');
+    form.setValue('tags', [...currentTags, '']);
   };
 
   const removeTag = (index: number) => {
-    if (formData.tags.length > 1) {
-      const newTags = formData.tags.filter((_, i) => i !== index);
-      setFormData({ ...formData, tags: newTags });
+    const currentTags = form.getValues('tags');
+    if (currentTags.length > 1) {
+      const newTags = currentTags.filter((_, i) => i !== index);
+      form.setValue('tags', newTags);
     }
   };
 
@@ -411,143 +441,201 @@ export default function AdminBlog() {
             </DialogTitle>
           </DialogHeader>
           
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="title">Title</Label>
-                <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) => handleTitleChange(e.target.value)}
-                  required
-                  data-testid="input-title"
+          <Form {...form}>
+            <form id="blog-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Title</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          onChange={(e) => {
+                            field.onChange(e);
+                            if (!editingPost) {
+                              form.setValue('slug', generateSlug(e.target.value));
+                            }
+                          }}
+                          data-testid="input-title"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="slug"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Slug</FormLabel>
+                      <FormControl>
+                        <Input {...field} data-testid="input-slug" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
               </div>
-              <div>
-                <Label htmlFor="slug">Slug</Label>
-                <Input
-                  id="slug"
-                  value={formData.slug}
-                  onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                  required
-                  data-testid="input-slug"
+
+              <FormField
+                control={form.control}
+                name="excerpt"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Excerpt</FormLabel>
+                    <FormControl>
+                      <Textarea {...field} rows={2} data-testid="textarea-excerpt" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="content"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Content</FormLabel>
+                    <FormControl>
+                      <Textarea {...field} rows={8} data-testid="textarea-content" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Category</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-category">
+                            <SelectValue placeholder="Select category" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {CATEGORY_OPTIONS.map(cat => (
+                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="readTime"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Read Time (minutes)</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type="number"
+                          min="1"
+                          onChange={(e) => field.onChange(parseInt(e.target.value) || 5)}
+                          data-testid="input-read-time"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
               </div>
-            </div>
 
-            <div>
-              <Label htmlFor="excerpt">Excerpt</Label>
-              <Textarea
-                id="excerpt"
-                value={formData.excerpt}
-                onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
-                rows={2}
-                required
-                data-testid="textarea-excerpt"
+              <FormField
+                control={form.control}
+                name="imageUrl"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Image URL</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="url"
+                        placeholder="https://example.com/image.jpg"
+                        data-testid="input-image-url"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
 
-            <div>
-              <Label htmlFor="content">Content</Label>
-              <Textarea
-                id="content"
-                value={formData.content}
-                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                rows={8}
-                required
-                data-testid="textarea-content"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="category">Category</Label>
-                <select
-                  id="category"
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full p-2 border rounded-md"
-                  data-testid="select-category"
-                >
-                  {CATEGORY_OPTIONS.map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <Label htmlFor="readTime">Read Time (minutes)</Label>
-                <Input
-                  id="readTime"
-                  type="number"
-                  min="1"
-                  value={formData.readTime}
-                  onChange={(e) => setFormData({ ...formData, readTime: parseInt(e.target.value) || 5 })}
-                  data-testid="input-read-time"
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="imageUrl">Image URL</Label>
-              <Input
-                id="imageUrl"
-                type="url"
-                value={formData.imageUrl}
-                onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                placeholder="https://example.com/image.jpg"
-                data-testid="input-image-url"
-              />
-            </div>
-
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <Label>Tags</Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addTag}
-                  data-testid="button-add-tag"
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add Tag
-                </Button>
-              </div>
-              <div className="space-y-2">
-                {formData.tags.map((tag, index) => (
-                  <div key={index} className="flex items-center space-x-2">
-                    <Input
-                      value={tag}
-                      onChange={(e) => handleTagChange(index, e.target.value)}
-                      placeholder="Tag name"
-                      data-testid={`input-tag-${index}`}
-                    />
-                    {formData.tags.length > 1 && (
+              <FormField
+                control={form.control}
+                name="tags"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex justify-between items-center mb-2">
+                      <FormLabel>Tags</FormLabel>
                       <Button
                         type="button"
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
-                        onClick={() => removeTag(index)}
-                        data-testid={`button-remove-tag-${index}`}
+                        onClick={addTag}
+                        data-testid="button-add-tag"
                       >
-                        <X className="h-4 w-4" />
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add Tag
                       </Button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="isPublished"
-                checked={formData.isPublished}
-                onCheckedChange={(checked) => setFormData({ ...formData, isPublished: checked })}
-                data-testid="switch-published"
+                    </div>
+                    <div className="space-y-2">
+                      {field.value.map((tag: string, index: number) => (
+                        <div key={index} className="flex items-center space-x-2">
+                          <Input
+                            value={tag}
+                            onChange={(e) => handleTagChange(index, e.target.value)}
+                            placeholder="Tag name"
+                            data-testid={`input-tag-${index}`}
+                          />
+                          {field.value.length > 1 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeTag(index)}
+                              data-testid={`button-remove-tag-${index}`}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              <Label htmlFor="isPublished">Published</Label>
-            </div>
-          </form>
+
+              <FormField
+                control={form.control}
+                name="isPublished"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        data-testid="switch-published"
+                      />
+                    </FormControl>
+                    <FormLabel>Published</FormLabel>
+                  </FormItem>
+                )}
+              />
+            </form>
+          </Form>
 
           <DialogFooter>
             <Button
@@ -558,7 +646,8 @@ export default function AdminBlog() {
               Cancel
             </Button>
             <Button
-              onClick={handleSubmit}
+              type="submit"
+              form="blog-form"
               disabled={createMutation.isPending || updateMutation.isPending}
               data-testid="button-save"
             >

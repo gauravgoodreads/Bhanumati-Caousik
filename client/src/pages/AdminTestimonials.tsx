@@ -20,7 +20,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import type { Testimonial, InsertTestimonial } from '@shared/schema';
+import type { Testimonial } from '@shared/schema';
+import { insertTestimonialSchema } from '@shared/schema';
 import {
   Dialog,
   DialogContent,
@@ -32,17 +33,27 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 
-interface TestimonialFormData {
-  name: string;
-  role: string;
-  company: string;
-  content: string;
-  rating: number;
-  imageUrl: string;
-  isActive: boolean;
-  sortOrder: number;
-}
+// Form schema with extended validation
+const testimonialFormSchema = insertTestimonialSchema.extend({
+  rating: z.coerce.number().min(1, 'Rating must be between 1 and 5').max(5, 'Rating must be between 1 and 5'),
+  name: z.string().min(1, 'Name is required'),
+  role: z.string().min(1, 'Role is required'),
+  content: z.string().min(1, 'Content is required')
+});
+
+type TestimonialFormData = z.infer<typeof testimonialFormSchema>;
 
 export default function AdminTestimonials() {
   const [, setLocation] = useLocation();
@@ -51,15 +62,19 @@ export default function AdminTestimonials() {
   
   const [showDialog, setShowDialog] = useState(false);
   const [editingTestimonial, setEditingTestimonial] = useState<Testimonial | null>(null);
-  const [formData, setFormData] = useState<TestimonialFormData>({
-    name: '',
-    role: '',
-    company: '',
-    content: '',
-    rating: 5,
-    imageUrl: '',
-    isActive: true,
-    sortOrder: 0
+  
+  const form = useForm<TestimonialFormData>({
+    resolver: zodResolver(testimonialFormSchema),
+    defaultValues: {
+      name: '',
+      role: '',
+      company: '',
+      content: '',
+      rating: 5,
+      imageUrl: '',
+      isActive: true,
+      sortOrder: 0
+    }
   });
 
   // Fetch testimonials
@@ -69,7 +84,7 @@ export default function AdminTestimonials() {
 
   // Create mutation
   const createMutation = useMutation({
-    mutationFn: (data: Omit<InsertTestimonial, 'id' | 'createdAt' | 'updatedAt'>) => 
+    mutationFn: (data: Omit<TestimonialFormData, 'id' | 'createdAt' | 'updatedAt'>) => 
       apiRequest('POST', '/api/testimonials', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/testimonials'] });
@@ -92,7 +107,7 @@ export default function AdminTestimonials() {
 
   // Update mutation
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string, data: Partial<InsertTestimonial> }) => 
+    mutationFn: ({ id, data }: { id: string, data: Partial<TestimonialFormData> }) => 
       apiRequest('PUT', `/api/testimonials/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/testimonials'] });
@@ -134,7 +149,7 @@ export default function AdminTestimonials() {
   });
 
   const resetForm = () => {
-    setFormData({
+    form.reset({
       name: '',
       role: '',
       company: '',
@@ -149,13 +164,22 @@ export default function AdminTestimonials() {
 
   const openCreateDialog = () => {
     resetForm();
-    setFormData(prev => ({ ...prev, sortOrder: testimonials.length }));
+    form.reset({
+      name: '',
+      role: '',
+      company: '',
+      content: '',
+      rating: 5,
+      imageUrl: '',
+      isActive: true,
+      sortOrder: testimonials.length
+    });
     setShowDialog(true);
   };
 
   const openEditDialog = (testimonial: Testimonial) => {
     setEditingTestimonial(testimonial);
-    setFormData({
+    form.reset({
       name: testimonial.name,
       role: testimonial.role,
       company: testimonial.company || '',
@@ -168,13 +192,11 @@ export default function AdminTestimonials() {
     setShowDialog(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const onSubmit = (data: TestimonialFormData) => {
     const submitData = {
-      ...formData,
-      company: formData.company || null,
-      imageUrl: formData.imageUrl || null
+      ...data,
+      company: data.company || null,
+      imageUrl: data.imageUrl || null
     };
 
     if (editingTestimonial) {
@@ -380,105 +402,153 @@ export default function AdminTestimonials() {
             </DialogTitle>
           </DialogHeader>
           
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                  data-testid="input-name"
+          <Form {...form}>
+            <form id="testimonial-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Name</FormLabel>
+                      <FormControl>
+                        <Input {...field} data-testid="input-name" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="role"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Role</FormLabel>
+                      <FormControl>
+                        <Input {...field} data-testid="input-role" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
               </div>
-              <div>
-                <Label htmlFor="role">Role</Label>
-                <Input
-                  id="role"
-                  value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                  required
-                  data-testid="input-role"
-                />
-              </div>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="company">Company (Optional)</Label>
-                <Input
-                  id="company"
-                  value={formData.company}
-                  onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                  data-testid="input-company"
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="company"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Company (Optional)</FormLabel>
+                      <FormControl>
+                        <Input {...field} data-testid="input-company" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="rating"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Rating</FormLabel>
+                      <FormControl>
+                        <select
+                          {...field}
+                          onChange={(e) => field.onChange(parseInt(e.target.value))}
+                          className="w-full p-2 border rounded-md"
+                          data-testid="select-rating"
+                        >
+                          {[5, 4, 3, 2, 1].map(rating => (
+                            <option key={rating} value={rating}>
+                              {rating} Star{rating !== 1 ? 's' : ''}
+                            </option>
+                          ))}
+                        </select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
               </div>
-              <div>
-                <Label htmlFor="rating">Rating</Label>
-                <select
-                  id="rating"
-                  value={formData.rating}
-                  onChange={(e) => setFormData({ ...formData, rating: parseInt(e.target.value) })}
-                  className="w-full p-2 border rounded-md"
-                  data-testid="select-rating"
-                >
-                  {[5, 4, 3, 2, 1].map(rating => (
-                    <option key={rating} value={rating}>
-                      {rating} Star{rating !== 1 ? 's' : ''}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
 
-            <div>
-              <Label htmlFor="content">Testimonial Content</Label>
-              <Textarea
-                id="content"
-                value={formData.content}
-                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                rows={4}
-                required
-                placeholder="Share what this client said about your services..."
-                data-testid="textarea-content"
+              <FormField
+                control={form.control}
+                name="content"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Testimonial Content</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        rows={4}
+                        placeholder="Share what this client said about your services..."
+                        data-testid="textarea-content"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="imageUrl">Profile Image URL (Optional)</Label>
-                <Input
-                  id="imageUrl"
-                  type="url"
-                  value={formData.imageUrl}
-                  onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                  placeholder="https://example.com/profile.jpg"
-                  data-testid="input-image-url"
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="imageUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Profile Image URL (Optional)</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type="url"
+                          placeholder="https://example.com/profile.jpg"
+                          data-testid="input-image-url"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="sortOrder"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Sort Order</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type="number"
+                          onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                          data-testid="input-sort-order"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
               </div>
-              <div>
-                <Label htmlFor="sortOrder">Sort Order</Label>
-                <Input
-                  id="sortOrder"
-                  type="number"
-                  value={formData.sortOrder}
-                  onChange={(e) => setFormData({ ...formData, sortOrder: parseInt(e.target.value) || 0 })}
-                  data-testid="input-sort-order"
-                />
-              </div>
-            </div>
 
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="isActive"
-                checked={formData.isActive}
-                onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
-                data-testid="switch-active"
+              <FormField
+                control={form.control}
+                name="isActive"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        data-testid="switch-active"
+                      />
+                    </FormControl>
+                    <FormLabel>Active</FormLabel>
+                  </FormItem>
+                )}
               />
-              <Label htmlFor="isActive">Active</Label>
-            </div>
-          </form>
+            </form>
+          </Form>
 
           <DialogFooter>
             <Button
@@ -489,7 +559,8 @@ export default function AdminTestimonials() {
               Cancel
             </Button>
             <Button
-              onClick={handleSubmit}
+              type="submit"
+              form="testimonial-form"
               disabled={createMutation.isPending || updateMutation.isPending}
               data-testid="button-save"
             >
