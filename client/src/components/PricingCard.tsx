@@ -10,6 +10,7 @@ interface PricingCardProps {
   features: string[];
   buttonText: string;
   isPopular?: boolean;
+  isLoading?: boolean;
   onButtonClick: () => void;
 }
 
@@ -20,6 +21,7 @@ export default function PricingCard({
   features, 
   buttonText, 
   isPopular = false,
+  isLoading = false,
   onButtonClick 
 }: PricingCardProps) {
   return (
@@ -56,6 +58,7 @@ export default function PricingCard({
 
         <Button 
           onClick={onButtonClick}
+          disabled={isLoading}
           className={`w-full ${
             isPopular 
               ? 'bg-gradient-to-r from-blue-600 to-teal-600 hover:scale-105' 
@@ -63,7 +66,7 @@ export default function PricingCard({
           } transition-transform`}
           data-testid={`button-${title.toLowerCase().replace(/\s+/g, '-')}`}
         >
-          {buttonText}
+          {isLoading ? 'Processing...' : buttonText}
         </Button>
       </CardContent>
     </Card>

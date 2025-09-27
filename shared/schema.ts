@@ -140,6 +140,21 @@ export const adminUsers = pgTable('admin_users', {
   updatedAt: timestamp('updated_at').notNull().defaultNow()
 });
 
+// Payment Orders Table - Server-side order tracking for security
+export const paymentOrders = pgTable('payment_orders', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  razorpayOrderId: text('razorpay_order_id').notNull().unique(),
+  itemType: text('item_type').notNull(), // 'package' or 'workshop'
+  itemId: uuid('item_id').notNull(),
+  expectedAmount: decimal('expected_amount', { precision: 10, scale: 2 }).notNull(),
+  currency: text('currency').notNull().default('INR'),
+  status: text('status').notNull().default('created'), // created, verified, completed, failed
+  paymentId: text('payment_id'), // Razorpay payment ID after verification
+  customerData: jsonb('customer_data').notNull(), // Store customer info
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow()
+});
+
 // Insert Schemas
 export const insertServiceSchema = createInsertSchema(services).omit({
   id: true,
@@ -202,6 +217,39 @@ export const insertAdminUserSchema = createInsertSchema(adminUsers).omit({
   lastLoginAt: true
 });
 
+export const insertPaymentOrderSchema = createInsertSchema(paymentOrders).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  status: true,
+  paymentId: true
+});
+
+// Zod schemas for API validation
+export const createOrderSchema = z.object({
+  amount: z.number().positive(),
+  currency: z.string().default('INR'),
+  receipt: z.string().optional(),
+  notes: z.object({
+    type: z.enum(['package', 'workshop']),
+    itemId: z.string().uuid(),
+    itemTitle: z.string(),
+  }),
+});
+
+export const verifyPaymentSchema = z.object({
+  razorpay_order_id: z.string(),
+  razorpay_payment_id: z.string(),
+  razorpay_signature: z.string(),
+  // Remove type and itemId from verification - server uses stored data only
+  customerData: z.object({
+    name: z.string().min(1),
+    email: z.string().email(),
+    phone: z.string().min(1),
+    specialRequests: z.string().optional(),
+  }),
+});
+
 // Types
 export type Service = typeof services.$inferSelect;
 export type InsertService = z.infer<typeof insertServiceSchema>;
@@ -229,3 +277,6 @@ export type InsertContactMessage = z.infer<typeof insertContactMessageSchema>;
 
 export type AdminUser = typeof adminUsers.$inferSelect;
 export type InsertAdminUser = z.infer<typeof insertAdminUserSchema>;
+
+export type PaymentOrder = typeof paymentOrders.$inferSelect;
+export type InsertPaymentOrder = z.infer<typeof insertPaymentOrderSchema>;

@@ -2,16 +2,87 @@ import PricingCard from './PricingCard';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import type { Package } from '@shared/schema';
+import { initiatePayment } from '@/lib/payment';
+import { useToast } from '@/hooks/use-toast';
+import { useState } from 'react';
 
 export default function Packages() {
   const { data: packages = [], isLoading } = useQuery<Package[]>({
     queryKey: ['/api/packages'],
   });
+  const { toast } = useToast();
+  const [paymentLoading, setPaymentLoading] = useState<string | null>(null);
 
-  const handlePayment = (packageTitle: string, amount: string) => {
-    // TODO: Integrate with Razorpay
-    console.log(`Payment initiated for ${packageTitle}: ₹${amount}`);
-    alert(`Payment integration would be triggered here for ${packageTitle} - ₹${amount}`);
+  const handlePayment = async (packageId: string, packageTitle: string, amount: string) => {
+    console.log('Payment button clicked for package:', packageId);
+    
+    // Set loading state immediately when button is clicked
+    setPaymentLoading(packageId);
+    
+    try {
+      // Create a simple form for customer details
+      const customerName = prompt('Please enter your full name:');
+      if (!customerName) {
+        console.log('Payment cancelled - no customer name');
+        setPaymentLoading(null);
+        return;
+      }
+
+      const customerEmail = prompt('Please enter your email address:');
+      if (!customerEmail || !customerEmail.includes('@')) {
+        alert('Please enter a valid email address');
+        console.log('Payment cancelled - invalid email');
+        setPaymentLoading(null);
+        return;
+      }
+
+      const customerPhone = prompt('Please enter your phone number:');
+      if (!customerPhone) {
+        console.log('Payment cancelled - no phone');
+        setPaymentLoading(null);
+        return;
+      }
+
+      console.log('Starting payment flow with customer details');
+      
+      await initiatePayment({
+        amount: parseFloat(amount),
+        itemId: packageId,
+        itemTitle: packageTitle,
+        type: 'package',
+        customerData: {
+          name: customerName,
+          email: customerEmail,
+          phone: customerPhone,
+        },
+        onSuccess: (response) => {
+          console.log('Payment successful:', response);
+          setPaymentLoading(null);
+          toast({
+            title: "Payment Successful!",
+            description: `Thank you for purchasing ${packageTitle}. We'll contact you shortly to schedule your sessions.`,
+          });
+        },
+        onError: (error) => {
+          console.error('Payment error:', error);
+          setPaymentLoading(null);
+          toast({
+            title: "Payment Failed",
+            description: "There was an error processing your payment. Please try again.",
+            variant: "destructive",
+          });
+        },
+      });
+    } catch (error) {
+      // Ensure loading state is cleared on any error
+      console.error('Payment handler error:', error);
+      setPaymentLoading(null);
+      toast({
+        title: "Payment Failed",
+        description: "There was an error processing your payment. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleInquiry = (packageId: string, packageTitle: string) => {
@@ -59,9 +130,10 @@ export default function Packages() {
     features: pkg.features,
     buttonText: pkg.category === 'corporate' ? 'Request Inquiry' : 'Get Started',
     isPopular: pkg.isPopular,
+    isLoading: paymentLoading === pkg.id,
     onButtonClick: pkg.category === 'corporate' 
       ? () => handleInquiry(pkg.id, pkg.title)
-      : () => handlePayment(pkg.title, pkg.price)
+      : () => handlePayment(pkg.id, pkg.title, pkg.price)
   }));
 
   return (

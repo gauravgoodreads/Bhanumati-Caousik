@@ -11,7 +11,8 @@ import type {
   WorkshopBooking, InsertWorkshopBooking,
   PackageInquiry, InsertPackageInquiry,
   ContactMessage, InsertContactMessage,
-  AdminUser, InsertAdminUser
+  AdminUser, InsertAdminUser,
+  PaymentOrder, InsertPaymentOrder
 } from '@shared/schema';
 
 const sql_client = neon(process.env.DATABASE_URL!);
@@ -64,6 +65,7 @@ export interface IStorage {
   getWorkshopBookingsByWorkshop(workshopId: string): Promise<WorkshopBooking[]>;
   createWorkshopBooking(booking: InsertWorkshopBooking): Promise<WorkshopBooking>;
   updateWorkshopBooking(id: string, booking: Partial<InsertWorkshopBooking>): Promise<WorkshopBooking | null>;
+  updateWorkshopBookingPayment(id: string, paymentStatus: string, paymentId: string): Promise<WorkshopBooking | null>;
 
   // Package Inquiries
   getPackageInquiries(): Promise<PackageInquiry[]>;
@@ -82,6 +84,11 @@ export interface IStorage {
   getAdminUserById(id: string): Promise<AdminUser | null>;
   createAdminUser(user: InsertAdminUser): Promise<AdminUser>;
   updateAdminUser(id: string, user: Partial<InsertAdminUser>): Promise<AdminUser | null>;
+
+  // Payment Orders
+  createPaymentOrder(order: InsertPaymentOrder): Promise<PaymentOrder>;
+  getPaymentOrderByRazorpayId(razorpayOrderId: string): Promise<PaymentOrder | null>;
+  updatePaymentOrderStatus(id: string, status: string, paymentId?: string): Promise<PaymentOrder | null>;
 }
 
 export class DbStorage implements IStorage {
@@ -346,6 +353,18 @@ export class DbStorage implements IStorage {
     return results[0] || null;
   }
 
+  async updateWorkshopBookingPayment(id: string, paymentStatus: string, paymentId: string): Promise<WorkshopBooking | null> {
+    const results = await db.update(schema.workshopBookings)
+      .set({ 
+        paymentStatus, 
+        paymentId,
+        updatedAt: new Date() 
+      })
+      .where(eq(schema.workshopBookings.id, id))
+      .returning();
+    return results[0] || null;
+  }
+
   // Package Inquiries
   async getPackageInquiries(): Promise<PackageInquiry[]> {
     return await db.select().from(schema.packageInquiries)
@@ -436,6 +455,37 @@ export class DbStorage implements IStorage {
     const results = await db.update(schema.adminUsers)
       .set({ ...user, updatedAt: new Date() })
       .where(eq(schema.adminUsers.id, id))
+      .returning();
+    return results[0] || null;
+  }
+
+  // Payment Orders
+  async createPaymentOrder(order: InsertPaymentOrder): Promise<PaymentOrder> {
+    const results = await db.insert(schema.paymentOrders)
+      .values({
+        ...order,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+    return results[0];
+  }
+
+  async getPaymentOrderByRazorpayId(razorpayOrderId: string): Promise<PaymentOrder | null> {
+    const results = await db.select().from(schema.paymentOrders)
+      .where(eq(schema.paymentOrders.razorpayOrderId, razorpayOrderId));
+    return results[0] || null;
+  }
+
+  async updatePaymentOrderStatus(id: string, status: string, paymentId?: string): Promise<PaymentOrder | null> {
+    const updateData: any = { status, updatedAt: new Date() };
+    if (paymentId) {
+      updateData.paymentId = paymentId;
+    }
+
+    const results = await db.update(schema.paymentOrders)
+      .set(updateData)
+      .where(eq(schema.paymentOrders.id, id))
       .returning();
     return results[0] || null;
   }

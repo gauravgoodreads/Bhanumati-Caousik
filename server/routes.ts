@@ -5,6 +5,8 @@ import { z } from "zod";
 import bcrypt from 'bcryptjs';
 import session from 'express-session';
 import connectPgSimple from 'connect-pg-simple';
+import Razorpay from 'razorpay';
+import crypto from 'crypto';
 
 // Extend session data interface
 declare module 'express-session' {
@@ -21,6 +23,8 @@ import {
   insertWorkshopBookingSchema,
   insertPackageInquirySchema,
   insertContactMessageSchema,
+  createOrderSchema,
+  verifyPaymentSchema,
 } from '@shared/schema';
 
 // PostgreSQL session store
@@ -48,6 +52,12 @@ const sessionMiddleware = session({
     sameSite: 'lax',
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
+});
+
+// Initialize Razorpay
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID!,
+  key_secret: process.env.RAZORPAY_KEY_SECRET!,
 });
 
 // Auth middleware
@@ -539,6 +549,185 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(message);
     } catch (error) {
       res.status(500).json({ error: 'Failed to create contact message' });
+    }
+  });
+
+  // Payment Routes
+  app.post('/api/payment/create-order', validateBody(createOrderSchema), async (req, res) => {
+    try {
+      const { amount, currency, receipt, notes } = req.body;
+
+      // Verify the item exists and get its actual price
+      let actualAmount: number;
+      
+      if (notes.type === 'package') {
+        const packageItem = await storage.getPackageById(notes.itemId);
+        if (!packageItem || !packageItem.isActive) {
+          return res.status(404).json({ error: 'Package not found or inactive' });
+        }
+        actualAmount = parseFloat(packageItem.price);
+      } else if (notes.type === 'workshop') {
+        const workshop = await storage.getWorkshopById(notes.itemId);
+        if (!workshop || !workshop.isActive) {
+          return res.status(404).json({ error: 'Workshop not found or inactive' });
+        }
+        actualAmount = parseFloat(workshop.price);
+      } else {
+        return res.status(400).json({ error: 'Invalid item type' });
+      }
+
+      // Verify the amount matches the server-side price (prevent client-side manipulation)
+      if (Math.abs(amount - actualAmount) > 0.01) {
+        return res.status(400).json({ error: 'Amount mismatch with server price' });
+      }
+
+      // Create Razorpay order
+      const order = await razorpay.orders.create({
+        amount: Math.round(actualAmount * 100), // Use server-side amount, convert to paise
+        currency,
+        receipt: receipt || `ord_${Date.now()}`,
+        notes
+      });
+
+      // Store payment order in database for verification tracking
+      await storage.createPaymentOrder({
+        razorpayOrderId: order.id,
+        itemType: notes.type,
+        itemId: notes.itemId,
+        expectedAmount: actualAmount.toString(),
+        currency,
+        customerData: {} // Will be updated during verification
+      });
+
+      res.json({
+        orderId: order.id,
+        amount: order.amount,
+        currency: order.currency,
+        keyId: process.env.RAZORPAY_KEY_ID
+      });
+    } catch (error) {
+      console.error('Payment order creation failed:', error);
+      res.status(500).json({ error: 'Failed to create payment order' });
+    }
+  });
+
+  app.post('/api/payment/verify', validateBody(verifyPaymentSchema), async (req, res) => {
+    try {
+      const { 
+        razorpay_order_id, 
+        razorpay_payment_id, 
+        razorpay_signature,
+        customerData 
+      } = req.body;
+      
+      // NOTE: We ignore client-supplied type and itemId for security - use only server-side data
+
+      // Get the stored payment order to verify server-side tracking
+      const paymentOrder = await storage.getPaymentOrderByRazorpayId(razorpay_order_id);
+      if (!paymentOrder) {
+        return res.status(400).json({ error: 'Payment order not found' });
+      }
+
+      // Strict idempotency check - prevent duplicate processing
+      if (paymentOrder.status === 'completed' || paymentOrder.status === 'verified') {
+        return res.json({
+          message: 'Payment already processed',
+          type: paymentOrder.itemType,
+          alreadyProcessed: true
+        });
+      }
+
+      // Verify payment signature using constant-time comparison
+      const shasum = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET!);
+      shasum.update(`${razorpay_order_id}|${razorpay_payment_id}`);
+      const digest = shasum.digest('hex');
+
+      // Use crypto.timingSafeEqual for constant-time comparison to prevent timing attacks
+      if (digest.length !== razorpay_signature.length || 
+          !crypto.timingSafeEqual(Buffer.from(digest), Buffer.from(razorpay_signature))) {
+        await storage.updatePaymentOrderStatus(paymentOrder.id, 'failed');
+        return res.status(400).json({ error: 'Invalid payment signature' });
+      }
+
+      // Re-verify the item still exists and get current price for security
+      let currentItem: any;
+      let currentAmount: number;
+      
+      if (paymentOrder.itemType === 'package') {
+        currentItem = await storage.getPackageById(paymentOrder.itemId);
+        if (!currentItem || !currentItem.isActive) {
+          await storage.updatePaymentOrderStatus(paymentOrder.id, 'failed');
+          return res.status(404).json({ error: 'Package not found or inactive' });
+        }
+        currentAmount = parseFloat(currentItem.price);
+      } else if (paymentOrder.itemType === 'workshop') {
+        currentItem = await storage.getWorkshopById(paymentOrder.itemId);
+        if (!currentItem || !currentItem.isActive) {
+          await storage.updatePaymentOrderStatus(paymentOrder.id, 'failed');
+          return res.status(404).json({ error: 'Workshop not found or inactive' });
+        }
+        currentAmount = parseFloat(currentItem.price);
+      } else {
+        await storage.updatePaymentOrderStatus(paymentOrder.id, 'failed');
+        return res.status(400).json({ error: 'Invalid item type in stored order' });
+      }
+
+      // Verify the stored payment amount matches current item price
+      const storedAmount = parseFloat(paymentOrder.expectedAmount);
+      if (Math.abs(currentAmount - storedAmount) > 0.01) {
+        await storage.updatePaymentOrderStatus(paymentOrder.id, 'failed');
+        return res.status(400).json({ error: 'Payment amount mismatch with current price' });
+      }
+
+      // Update payment order with customer data and mark as verified  
+      await storage.updatePaymentOrderStatus(paymentOrder.id, 'verified', razorpay_payment_id);
+
+      // Payment verified, now create booking/inquiry based on stored order data
+      if (paymentOrder.itemType === 'workshop') {
+        // Create workshop booking using verified server-side data
+
+        const booking = await storage.createWorkshopBooking({
+          workshopId: paymentOrder.itemId,
+          customerName: customerData.name,
+          customerEmail: customerData.email,
+          customerPhone: customerData.phone,
+          amount: paymentOrder.expectedAmount,
+          specialRequests: customerData.specialRequests || null
+        });
+
+        // Update payment status and ID
+        await storage.updateWorkshopBookingPayment(booking.id, 'completed', razorpay_payment_id);
+        await storage.updatePaymentOrderStatus(paymentOrder.id, 'completed', razorpay_payment_id);
+
+        res.json({ 
+          message: 'Workshop booking successful',
+          bookingId: booking.id,
+          type: 'workshop'
+        });
+
+      } else if (paymentOrder.itemType === 'package') {
+        // Create package inquiry with payment completed using verified server-side data
+
+        const inquiry = await storage.createPackageInquiry({
+          packageId: paymentOrder.itemId,
+          customerName: customerData.name,
+          customerEmail: customerData.email,
+          customerPhone: customerData.phone,
+          message: `Payment completed for ${currentItem.title}. Payment ID: ${razorpay_payment_id}`
+        });
+
+        await storage.updatePaymentOrderStatus(paymentOrder.id, 'completed', razorpay_payment_id);
+
+        res.json({ 
+          message: 'Package payment successful',
+          inquiryId: inquiry.id,
+          type: 'package'
+        });
+      }
+
+    } catch (error) {
+      console.error('Payment verification failed:', error);
+      res.status(500).json({ error: 'Payment verification failed' });
     }
   });
 
