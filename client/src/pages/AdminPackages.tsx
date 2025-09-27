@@ -20,7 +20,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import type { Package, InsertPackage } from '@shared/schema';
+import type { Package } from '@shared/schema';
+import { insertPackageSchema } from '@shared/schema';
 import {
   Dialog,
   DialogContent,
@@ -31,23 +32,36 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const CATEGORY_OPTIONS = [
   'individual', 'corporate', 'group', 'premium', 'basic', 'advanced'
 ];
 
-interface PackageFormData {
-  title: string;
-  description: string;
-  price: string;
-  duration: string;
-  features: string[];
-  isPopular: boolean;
-  isActive: boolean;
-  category: string;
-  sortOrder: number;
-}
+// Form schema with extended validation
+const packageFormSchema = insertPackageSchema.extend({
+  features: z.array(z.string().min(1, 'Feature cannot be empty')).min(1, 'At least one feature is required'),
+  price: z.string().min(1, 'Price is required').refine((val) => !isNaN(Number(val)) && Number(val) > 0, 'Price must be a positive number')
+});
+
+type PackageFormData = z.infer<typeof packageFormSchema>;
 
 export default function AdminPackages() {
   const [, setLocation] = useLocation();
@@ -56,16 +70,20 @@ export default function AdminPackages() {
   
   const [showDialog, setShowDialog] = useState(false);
   const [editingPackage, setEditingPackage] = useState<Package | null>(null);
-  const [formData, setFormData] = useState<PackageFormData>({
-    title: '',
-    description: '',
-    price: '',
-    duration: '',
-    features: [''],
-    isPopular: false,
-    isActive: true,
-    category: 'individual',
-    sortOrder: 0
+  
+  const form = useForm<PackageFormData>({
+    resolver: zodResolver(packageFormSchema),
+    defaultValues: {
+      title: '',
+      description: '',
+      price: '',
+      duration: '',
+      features: [''],
+      isPopular: false,
+      isActive: true,
+      category: 'individual',
+      sortOrder: 0
+    }
   });
 
   // Fetch packages
@@ -140,7 +158,7 @@ export default function AdminPackages() {
   });
 
   const resetForm = () => {
-    setFormData({
+    form.reset({
       title: '',
       description: '',
       price: '',
@@ -156,16 +174,26 @@ export default function AdminPackages() {
 
   const openCreateDialog = () => {
     resetForm();
-    setFormData(prev => ({ ...prev, sortOrder: packages.length }));
+    form.reset({
+      title: '',
+      description: '',
+      price: '',
+      duration: '',
+      features: [''],
+      isPopular: false,
+      isActive: true,
+      category: 'individual',
+      sortOrder: packages.length
+    });
     setShowDialog(true);
   };
 
   const openEditDialog = (pkg: Package) => {
     setEditingPackage(pkg);
-    setFormData({
+    form.reset({
       title: pkg.title,
       description: pkg.description,
-      price: pkg.price,
+      price: pkg.price.toString(),
       duration: pkg.duration,
       features: pkg.features.length > 0 ? pkg.features : [''],
       isPopular: pkg.isPopular,
@@ -176,12 +204,10 @@ export default function AdminPackages() {
     setShowDialog(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const cleanFeatures = formData.features.filter(f => f.trim() !== '');
+  const onSubmit = (data: PackageFormData) => {
+    const cleanFeatures = data.features.filter(f => f.trim() !== '');
     const submitData = {
-      ...formData,
+      ...data,
       features: cleanFeatures
     };
 
@@ -193,19 +219,22 @@ export default function AdminPackages() {
   };
 
   const handleFeatureChange = (index: number, value: string) => {
-    const newFeatures = [...formData.features];
+    const currentFeatures = form.getValues('features');
+    const newFeatures = [...currentFeatures];
     newFeatures[index] = value;
-    setFormData({ ...formData, features: newFeatures });
+    form.setValue('features', newFeatures);
   };
 
   const addFeature = () => {
-    setFormData({ ...formData, features: [...formData.features, ''] });
+    const currentFeatures = form.getValues('features');
+    form.setValue('features', [...currentFeatures, '']);
   };
 
   const removeFeature = (index: number) => {
-    if (formData.features.length > 1) {
-      const newFeatures = formData.features.filter((_, i) => i !== index);
-      setFormData({ ...formData, features: newFeatures });
+    const currentFeatures = form.getValues('features');
+    if (currentFeatures.length > 1) {
+      const newFeatures = currentFeatures.filter((_, i) => i !== index);
+      form.setValue('features', newFeatures);
     }
   };
 
@@ -421,71 +450,104 @@ export default function AdminPackages() {
             </DialogTitle>
           </DialogHeader>
           
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="title">Title</Label>
-                <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  required
-                  data-testid="input-title"
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Title</FormLabel>
+                      <FormControl>
+                        <Input 
+                          {...field} 
+                          data-testid="input-title"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="price"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Price (₹)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          {...field}
+                          type="number"
+                          step="0.01"
+                          data-testid="input-price"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
               </div>
-              <div>
-                <Label htmlFor="price">Price (₹)</Label>
-                <Input
-                  id="price"
-                  type="number"
-                  step="0.01"
-                  value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                  required
-                  data-testid="input-price"
-                />
-              </div>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="duration">Duration</Label>
-                <Input
-                  id="duration"
-                  value={formData.duration}
-                  onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                  placeholder="e.g., 3 months, 6 sessions"
-                  required
-                  data-testid="input-duration"
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="duration"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Duration</FormLabel>
+                      <FormControl>
+                        <Input 
+                          {...field}
+                          placeholder="e.g., 3 months, 6 sessions"
+                          data-testid="input-duration"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Category</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-category">
+                            <SelectValue placeholder="Select a category" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {CATEGORY_OPTIONS.map(cat => (
+                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
               </div>
-              <div>
-                <Label htmlFor="category">Category</Label>
-                <select
-                  id="category"
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full p-2 border rounded-md"
-                  data-testid="select-category"
-                >
-                  {CATEGORY_OPTIONS.map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
 
-            <div>
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                rows={3}
-                required
-                data-testid="textarea-description"
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        {...field}
+                        rows={3}
+                        data-testid="textarea-description"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
 
             <div>
               <div className="flex justify-between items-center mb-2">
@@ -559,6 +621,7 @@ export default function AdminPackages() {
               </div>
             </div>
           </form>
+          </Form>
 
           <DialogFooter>
             <Button
@@ -569,7 +632,7 @@ export default function AdminPackages() {
               Cancel
             </Button>
             <Button
-              onClick={handleSubmit}
+              onClick={form.handleSubmit(onSubmit)}
               disabled={createMutation.isPending || updateMutation.isPending}
               data-testid="button-save"
             >
