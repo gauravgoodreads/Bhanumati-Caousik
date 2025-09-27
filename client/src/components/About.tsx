@@ -2,6 +2,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Award, CheckCircle, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
+import profileImage from '@assets/logo_1758965840288.png';
 
 export default function About() {
   const credentials = [
@@ -43,28 +44,27 @@ export default function About() {
                 whileHover={{ scale: 1.02, rotate: 1 }}
                 transition={{ duration: 0.2 }}
               >
-                <div className="w-full h-full rounded-2xl bg-gradient-to-br from-blue-200 via-purple-100 to-green-200 flex items-center justify-center relative overflow-hidden">
-                  <div className="text-center z-10">
-                    <motion.div 
-                      className="w-28 h-28 bg-white rounded-full mx-auto mb-6 flex items-center justify-center shadow-lg"
-                      whileHover={{ scale: 1.1, rotate: 10 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <Award className="h-14 w-14 text-blue-600" />
-                    </motion.div>
-                    <p className="text-gray-700 font-semibold text-lg">Professional Portrait</p>
-                    <p className="text-gray-600 font-medium">Bhanumathi Cousik</p>
-                  </div>
+                <div className="w-full h-full rounded-2xl overflow-hidden relative">
+                  <motion.img
+                    src={profileImage}
+                    alt="Bhanumathi Cousik - Professional Portrait"
+                    className="w-full h-full object-cover"
+                    whileHover={{ scale: 1.05 }}
+                    transition={{ duration: 0.3 }}
+                    data-testid="profile-image"
+                  />
+                  {/* Elegant overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300" />
                   {/* Floating elements */}
                   <motion.div
-                    className="absolute top-4 right-4 text-blue-400"
+                    className="absolute top-4 right-4 text-white/70"
                     animate={{ rotate: 360 }}
                     transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
                   >
                     <Sparkles className="h-6 w-6" />
                   </motion.div>
                   <motion.div
-                    className="absolute bottom-4 left-4 text-green-400"
+                    className="absolute bottom-4 left-4 text-white/70"
                     animate={{ y: [-5, 5, -5] }}
                     transition={{ duration: 3, repeat: Infinity }}
                   >

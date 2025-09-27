@@ -13,6 +13,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
@@ -234,6 +235,9 @@ export default function Packages() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Complete Your Purchase</DialogTitle>
+            <DialogDescription>
+              Please provide your contact details to proceed with your package purchase.
+            </DialogDescription>
           </DialogHeader>
           
           <Form {...form}>
