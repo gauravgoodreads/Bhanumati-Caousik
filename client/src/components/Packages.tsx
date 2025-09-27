@@ -5,6 +5,34 @@ import type { Package } from '@shared/schema';
 import { initiatePayment } from '@/lib/payment';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+
+const customerFormSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  email: z.string().email('Please enter a valid email address'),
+  phone: z.string().min(10, 'Phone number must be at least 10 digits'),
+});
+
+type CustomerFormData = z.infer<typeof customerFormSchema>;
 
 export default function Packages() {
   const { data: packages = [], isLoading } = useQuery<Package[]>({
@@ -12,60 +40,61 @@ export default function Packages() {
   });
   const { toast } = useToast();
   const [paymentLoading, setPaymentLoading] = useState<string | null>(null);
+  const [showCustomerForm, setShowCustomerForm] = useState(false);
+  const [selectedPackage, setSelectedPackage] = useState<{
+    id: string;
+    title: string;
+    amount: string;
+  } | null>(null);
 
-  const handlePayment = async (packageId: string, packageTitle: string, amount: string) => {
+  const form = useForm<CustomerFormData>({
+    resolver: zodResolver(customerFormSchema),
+    defaultValues: {
+      name: '',
+      email: '',
+      phone: '',
+    },
+  });
+
+  const handlePayment = (packageId: string, packageTitle: string, amount: string) => {
     console.log('Payment button clicked for package:', packageId);
+    setSelectedPackage({ id: packageId, title: packageTitle, amount });
+    setShowCustomerForm(true);
+  };
+
+  const onSubmitCustomerForm = async (data: CustomerFormData) => {
+    if (!selectedPackage) return;
     
-    // Set loading state immediately when button is clicked
-    setPaymentLoading(packageId);
+    setPaymentLoading(selectedPackage.id);
+    setShowCustomerForm(false);
     
     try {
-      // Create a simple form for customer details
-      const customerName = prompt('Please enter your full name:');
-      if (!customerName) {
-        console.log('Payment cancelled - no customer name');
-        setPaymentLoading(null);
-        return;
-      }
-
-      const customerEmail = prompt('Please enter your email address:');
-      if (!customerEmail || !customerEmail.includes('@')) {
-        alert('Please enter a valid email address');
-        console.log('Payment cancelled - invalid email');
-        setPaymentLoading(null);
-        return;
-      }
-
-      const customerPhone = prompt('Please enter your phone number:');
-      if (!customerPhone) {
-        console.log('Payment cancelled - no phone');
-        setPaymentLoading(null);
-        return;
-      }
-
       console.log('Starting payment flow with customer details');
       
       await initiatePayment({
-        amount: parseFloat(amount),
-        itemId: packageId,
-        itemTitle: packageTitle,
+        amount: parseFloat(selectedPackage.amount),
+        itemId: selectedPackage.id,
+        itemTitle: selectedPackage.title,
         type: 'package',
         customerData: {
-          name: customerName,
-          email: customerEmail,
-          phone: customerPhone,
+          name: data.name,
+          email: data.email,
+          phone: data.phone,
         },
         onSuccess: (response) => {
           console.log('Payment successful:', response);
           setPaymentLoading(null);
+          setSelectedPackage(null);
+          form.reset();
           toast({
             title: "Payment Successful!",
-            description: `Thank you for purchasing ${packageTitle}. We'll contact you shortly to schedule your sessions.`,
+            description: `Thank you for purchasing ${selectedPackage.title}. We'll contact you shortly to schedule your sessions.`,
           });
         },
         onError: (error) => {
           console.error('Payment error:', error);
           setPaymentLoading(null);
+          setSelectedPackage(null);
           toast({
             title: "Payment Failed",
             description: "There was an error processing your payment. Please try again.",
@@ -74,9 +103,9 @@ export default function Packages() {
         },
       });
     } catch (error) {
-      // Ensure loading state is cleared on any error
       console.error('Payment handler error:', error);
       setPaymentLoading(null);
+      setSelectedPackage(null);
       toast({
         title: "Payment Failed",
         description: "There was an error processing your payment. Please try again.",
@@ -85,56 +114,51 @@ export default function Packages() {
     }
   };
 
+  const handleCloseModal = () => {
+    setShowCustomerForm(false);
+    setSelectedPackage(null);
+    form.reset();
+  };
+
   const handleInquiry = (packageId: string, packageTitle: string) => {
     // TODO: Create inquiry form
-    console.log(`Inquiry for package: ${packageTitle}`);
-    const element = document.getElementById('contact');
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
+    // For now, scroll to contact section
+    const contactSection = document.getElementById('contact');
+    if (contactSection) {
+      contactSection.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
+  // Filter only active packages and transform data
+  const activePackages = packages.filter(pkg => pkg.isActive);
+  
+  const transformedPackages = activePackages.map(pkg => ({
+    title: pkg.title,
+    price: `₹${pkg.price}`,
+    description: pkg.description,
+    features: pkg.features,
+    isPopular: pkg.isPopular,
+    buttonText: pkg.category === 'corporate' ? 'Request Inquiry' : 'Get Started',
+    onButtonClick: () => {
+      if (pkg.category === 'corporate') {
+        handleInquiry(pkg.id, pkg.title);
+      } else {
+        handlePayment(pkg.id, pkg.title, pkg.price);
+      }
+    }
+  }));
+
   if (isLoading) {
     return (
-      <section id="packages" className="py-20 bg-gradient-to-br from-gray-50 to-blue-50">
+      <section className="py-20 bg-gradient-to-br from-gray-50 via-blue-50/30 to-green-50/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <div className="h-8 bg-gray-200 rounded animate-pulse mb-4 w-80 mx-auto"></div>
-            <div className="h-6 bg-gray-200 rounded animate-pulse w-96 mx-auto"></div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="bg-white rounded-xl p-8 shadow-lg animate-pulse">
-                <div className="h-6 bg-gray-200 rounded mb-4"></div>
-                <div className="h-8 bg-gray-200 rounded mb-4 w-32"></div>
-                <div className="h-4 bg-gray-200 rounded mb-6 w-40"></div>
-                <div className="space-y-3">
-                  {[...Array(5)].map((_, j) => (
-                    <div key={j} className="h-4 bg-gray-200 rounded"></div>
-                  ))}
-                </div>
-                <div className="h-10 bg-gray-200 rounded mt-8"></div>
-              </div>
-            ))}
+          <div className="text-center">
+            <p className="text-gray-600">Loading packages...</p>
           </div>
         </div>
       </section>
     );
   }
-
-  // Transform packages data for the component
-  const transformedPackages = packages.map(pkg => ({
-    title: pkg.title,
-    price: `₹${parseFloat(pkg.price).toLocaleString('en-IN')}`,
-    description: pkg.description,
-    features: pkg.features,
-    buttonText: pkg.category === 'corporate' ? 'Request Inquiry' : 'Get Started',
-    isPopular: pkg.isPopular,
-    isLoading: paymentLoading === pkg.id,
-    onButtonClick: pkg.category === 'corporate' 
-      ? () => handleInquiry(pkg.id, pkg.title)
-      : () => handlePayment(pkg.id, pkg.title, pkg.price)
-  }));
 
   return (
     <section id="packages" className="py-20 bg-gradient-to-br from-gray-50 via-blue-50/30 to-green-50/20 relative overflow-hidden">
@@ -204,6 +228,93 @@ export default function Packages() {
           ))}
         </motion.div>
       </div>
+      
+      {/* Customer Details Form Modal */}
+      <Dialog open={showCustomerForm} onOpenChange={setShowCustomerForm}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Complete Your Purchase</DialogTitle>
+          </DialogHeader>
+          
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmitCustomerForm)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Full Name</FormLabel>
+                    <FormControl>
+                      <Input 
+                        {...field} 
+                        placeholder="Enter your full name"
+                        data-testid="input-customer-name"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email Address</FormLabel>
+                    <FormControl>
+                      <Input 
+                        {...field} 
+                        type="email"
+                        placeholder="Enter your email address"
+                        data-testid="input-customer-email"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone Number</FormLabel>
+                    <FormControl>
+                      <Input 
+                        {...field} 
+                        type="tel"
+                        placeholder="Enter your phone number"
+                        data-testid="input-customer-phone"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCloseModal}
+                  data-testid="button-cancel-payment"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  data-testid="button-proceed-payment"
+                  disabled={paymentLoading === selectedPackage?.id}
+                >
+                  {paymentLoading === selectedPackage?.id ? 'Processing...' : 'Proceed to Payment'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }

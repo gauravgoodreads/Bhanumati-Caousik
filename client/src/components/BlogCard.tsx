@@ -1,6 +1,7 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Calendar, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useLocation } from 'wouter';
 
 interface BlogCardProps {
   title: string;
@@ -14,12 +15,13 @@ interface BlogCardProps {
 }
 
 export default function BlogCard({ title, excerpt, image, date, readTime, category, slug, onClick }: BlogCardProps) {
+  const [, setLocation] = useLocation();
+
   const handleClick = () => {
     if (onClick) {
       onClick();
     } else if (slug) {
-      // TODO: Navigate to blog post detail page
-      console.log(`Navigate to /blog/${slug}`);
+      setLocation(`/blog/${slug}`);
     }
   };
 
