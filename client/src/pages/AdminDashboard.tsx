@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import type { AdminUser, Service, Package as PackageType, BlogPost, Testimonial, WorkshopBooking, PackageInquiry, PaymentOrder } from '@shared/schema';
+import type { AdminUser, Service, Package as PackageType, BlogPost, Testimonial, WorkshopBooking, PackageInquiry, PaymentOrder, ContactMessage } from '@shared/schema';
 
 interface DashboardStats {
   services: number;
@@ -73,6 +73,11 @@ export default function AdminDashboard() {
 
   const { data: paymentOrders = [] } = useQuery<PaymentOrder[]>({
     queryKey: ['/api/admin/payment-orders'],
+    enabled: !!adminUser,
+  });
+
+  const { data: contactMessages = [] } = useQuery<ContactMessage[]>({
+    queryKey: ['/api/contact-messages'],
     enabled: !!adminUser,
   });
 
@@ -340,6 +345,129 @@ export default function AdminDashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.8 }}
+        >
+          {/* Recent Payments */}
+          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <TrendingUp className="h-5 w-5 text-blue-600" />
+                <span>Recent Payments</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {paymentOrders.slice(0, 5).length > 0 ? (
+                paymentOrders
+                  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                  .slice(0, 5)
+                  .map((payment) => (
+                  <div key={payment.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <p className="font-medium text-gray-900" data-testid={`payment-customer-${payment.id}`}>
+                        {(payment.customerData as any)?.name || 'Customer'}
+                      </p>
+                      <p className="text-sm text-gray-600">{(payment.customerData as any)?.email}</p>
+                      <p className="text-xs text-gray-500">Order: {payment.razorpayOrderId.slice(-8)}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-medium text-green-600">₹{payment.expectedAmount}</p>
+                      <div className={`text-xs px-2 py-1 rounded-full inline-block ${
+                        payment.status === 'completed' ? 'bg-green-100 text-green-700' :
+                        payment.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                        payment.status === 'failed' ? 'bg-red-100 text-red-700' :
+                        'bg-gray-100 text-gray-700'
+                      }`}>
+                        {payment.status}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {new Date(payment.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-4 text-gray-500">
+                  <TrendingUp className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No recent payments</p>
+                </div>
+              )}
+              {paymentOrders.length > 5 && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="w-full" 
+                  onClick={() => setLocation('/admin/payments')}
+                  data-testid="button-view-all-payments"
+                >
+                  View all {paymentOrders.length} payments
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Recent Contact Requests */}
+          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <MessageSquare className="h-5 w-5 text-blue-600" />
+                <span>Recent Contact Requests</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {contactMessages.slice(0, 5).length > 0 ? (
+                contactMessages
+                  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                  .slice(0, 5)
+                  .map((message) => (
+                  <div key={message.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <p className="font-medium text-gray-900" data-testid={`contact-name-${message.id}`}>
+                        {message.name}
+                      </p>
+                      <p className="text-sm text-gray-600">{message.email}</p>
+                      <p className="text-sm text-gray-700 truncate max-w-48">{message.subject}</p>
+                    </div>
+                    <div className="text-right">
+                      <div className={`text-xs px-2 py-1 rounded-full inline-block ${
+                        message.status === 'new' ? 'bg-blue-100 text-blue-700' :
+                        message.status === 'read' ? 'bg-yellow-100 text-yellow-700' :
+                        message.status === 'replied' ? 'bg-green-100 text-green-700' :
+                        'bg-gray-100 text-gray-700'
+                      }`}>
+                        {message.status}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {new Date(message.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-4 text-gray-500">
+                  <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No recent contact requests</p>
+                </div>
+              )}
+              {contactMessages.length > 5 && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="w-full" 
+                  onClick={() => setLocation('/admin/contacts')}
+                  data-testid="button-view-all-contacts"
+                >
+                  View all {contactMessages.length} contact requests
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Legacy Workshop Bookings and Package Inquiries (moved below) */}
+        <motion.div
+          className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.9 }}
         >
           {/* Recent Workshop Bookings */}
           <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
