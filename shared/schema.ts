@@ -19,14 +19,16 @@ export const services = pgTable('services', {
 // Packages Table
 export const packages = pgTable('packages', {
   id: uuid('id').primaryKey().defaultRandom(),
-  title: text('title').notNull(),
+  planName: text('plan_name').notNull(), // e.g., "Discover", "Achieve Online"
+  title: text('title').notNull(), // Display title (can be same as planName)
   description: text('description').notNull(),
   price: decimal('price', { precision: 10, scale: 2 }).notNull(),
   duration: text('duration').notNull(), // e.g., "3 months", "6 sessions"
-  features: text('features').array().notNull().default([]),
+  features: jsonb('features').notNull().default([]), // Array of {text: string, included: boolean}
+  tier: text('tier').notNull(), // "STANDARD" or "PREMIUM"
   isPopular: boolean('is_popular').notNull().default(false),
   isActive: boolean('is_active').notNull().default(true),
-  category: text('category').notNull(), // e.g., "individual", "corporate"
+  category: text('category').notNull(), // "8-9 STUDENTS", "10-12 STUDENTS", "COLLEGE GRADUATES", "WORKING PROFESSIONALS"
   sortOrder: integer('sort_order').notNull().default(0),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow()
