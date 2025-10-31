@@ -1,4 +1,3 @@
-import PricingCard from './PricingCard';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import type { Package } from '@shared/schema';
@@ -8,6 +7,8 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { Check, X } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -26,6 +27,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 const customerFormSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -35,11 +37,24 @@ const customerFormSchema = z.object({
 
 type CustomerFormData = z.infer<typeof customerFormSchema>;
 
+interface PackageFeature {
+  text: string;
+  included: boolean;
+}
+
+const categories = [
+  '8-9 STUDENTS',
+  '10-12 STUDENTS',
+  'COLLEGE GRADUATES',
+  'WORKING PROFESSIONALS',
+] as const;
+
 export default function Packages() {
   const { data: packages = [], isLoading } = useQuery<Package[]>({
     queryKey: ['/api/packages'],
   });
   const { toast } = useToast();
+  const [selectedCategory, setSelectedCategory] = useState<string>('8-9 STUDENTS');
   const [paymentLoading, setPaymentLoading] = useState<string | null>(null);
   const [showCustomerForm, setShowCustomerForm] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<{
@@ -121,33 +136,12 @@ export default function Packages() {
     form.reset();
   };
 
-  const handleInquiry = (packageId: string, packageTitle: string) => {
-    // TODO: Create inquiry form
-    // For now, scroll to contact section
-    const contactSection = document.getElementById('contact');
-    if (contactSection) {
-      contactSection.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
-  // Filter only active packages and transform data
-  const activePackages = packages.filter(pkg => pkg.isActive);
+  // Filter packages by selected category
+  const activePackages = packages.filter(pkg => pkg.isActive && pkg.category === selectedCategory);
   
-  const transformedPackages = activePackages.map(pkg => ({
-    title: pkg.title,
-    price: `₹${pkg.price}`,
-    description: pkg.description,
-    features: pkg.features,
-    isPopular: pkg.isPopular,
-    buttonText: pkg.category === 'corporate' ? 'Request Inquiry' : 'Get Started',
-    onButtonClick: () => {
-      if (pkg.category === 'corporate') {
-        handleInquiry(pkg.id, pkg.title);
-      } else {
-        handlePayment(pkg.id, pkg.title, pkg.price);
-      }
-    }
-  }));
+  // Separate STANDARD and PREMIUM packages
+  const standardPackage = activePackages.find(pkg => pkg.tier === 'STANDARD');
+  const premiumPackage = activePackages.find(pkg => pkg.tier === 'PREMIUM');
 
   if (isLoading) {
     return (
@@ -172,7 +166,7 @@ export default function Packages() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
         {/* Header */}
         <motion.div 
-          className="text-center mb-16"
+          className="text-center mb-12"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -186,7 +180,7 @@ export default function Packages() {
             viewport={{ once: true }}
             transition={{ duration: 0.4, delay: 0.1 }}
           >
-            Choose Your <span className="bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">Transformation</span> Journey
+            Choose Your <span className="bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">Perfect Plan</span>
           </motion.h2>
           <motion.p 
             className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed"
@@ -195,38 +189,183 @@ export default function Packages() {
             viewport={{ once: true }}
             transition={{ duration: 0.3, delay: 0.2 }}
           >
-            Flexible packages designed to meet your unique needs, whether you're an individual seeking growth or an organization building excellence.
+            Select your category and discover the right package to unlock your potential
           </motion.p>
+        </motion.div>
+
+        {/* Category Tabs */}
+        <motion.div 
+          className="flex flex-wrap justify-center gap-3 mb-12"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.4, delay: 0.3 }}
+        >
+          {categories.map((category) => (
+            <button
+              key={category}
+              onClick={() => setSelectedCategory(category)}
+              className={`px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${
+                selectedCategory === category
+                  ? 'bg-gradient-to-r from-blue-600 to-green-600 text-white shadow-lg scale-105'
+                  : 'bg-white/80 backdrop-blur-sm text-gray-700 hover:bg-white hover:shadow-md'
+              }`}
+              data-testid={`tab-${category.toLowerCase().replace(/\s+/g, '-')}`}
+            >
+              {category}
+            </button>
+          ))}
         </motion.div>
 
         {/* Pricing Cards */}
         <motion.div 
-          className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto"
+          className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto"
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.4, delay: 0.3 }}
+          transition={{ duration: 0.4, delay: 0.4 }}
+          key={selectedCategory}
         >
-          {transformedPackages.map((pkg, index) => (
+          {/* Standard Package */}
+          {standardPackage && (
             <motion.div
-              key={index}
               initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.4, delay: 0.4 + index * 0.1 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
             >
-              <PricingCard
-                title={pkg.title}
-                price={pkg.price}
-                description={pkg.description}
-                features={pkg.features}
-                buttonText={pkg.buttonText}
-                onButtonClick={pkg.onButtonClick}
-                isPopular={pkg.isPopular}
-                data-testid={`package-card-${index}`}
-              />
+              <Card className="bg-white/90 backdrop-blur-sm border-2 border-gray-200 shadow-xl hover:shadow-2xl transition-all duration-300 h-full flex flex-col">
+                <CardHeader className="text-center pb-6">
+                  <div className="mb-2">
+                    <Badge variant="secondary" className="text-xs font-semibold">
+                      STANDARD
+                    </Badge>
+                  </div>
+                  <CardTitle className="text-2xl font-bold text-gray-900" data-testid={`package-name-${standardPackage.id}`}>
+                    {standardPackage.planName}
+                  </CardTitle>
+                  <CardDescription className="text-sm text-gray-600 mt-2">
+                    {standardPackage.description}
+                  </CardDescription>
+                  <div className="mt-6">
+                    <div className="flex items-baseline justify-center">
+                      <span className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent" data-testid={`package-price-${standardPackage.id}`}>
+                        ₹{parseFloat(standardPackage.price).toLocaleString()}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600 mt-2">{standardPackage.duration}</p>
+                  </div>
+                </CardHeader>
+                <CardContent className="flex-1">
+                  <ul className="space-y-3">
+                    {(standardPackage.features as PackageFeature[]).map((feature, idx) => (
+                      <li key={idx} className="flex items-start gap-3">
+                        <div className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center mt-0.5 ${
+                          feature.included 
+                            ? 'bg-green-100 text-green-600' 
+                            : 'bg-red-100 text-red-600'
+                        }`}>
+                          {feature.included ? (
+                            <Check className="w-3 h-3" />
+                          ) : (
+                            <X className="w-3 h-3" />
+                          )}
+                        </div>
+                        <span className={`text-sm ${
+                          feature.included ? 'text-gray-700' : 'text-gray-500'
+                        }`}>
+                          {feature.text}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+                <CardFooter className="pt-6">
+                  <Button
+                    className="w-full bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white font-semibold py-6"
+                    onClick={() => handlePayment(standardPackage.id, standardPackage.planName, standardPackage.price)}
+                    disabled={paymentLoading === standardPackage.id}
+                    data-testid={`button-buy-${standardPackage.id}`}
+                  >
+                    {paymentLoading === standardPackage.id ? 'Processing...' : 'BUY NOW'}
+                  </Button>
+                </CardFooter>
+              </Card>
             </motion.div>
-          ))}
+          )}
+
+          {/* Premium Package */}
+          {premiumPackage && (
+            <motion.div
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.1 }}
+            >
+              <Card className="bg-gradient-to-br from-blue-50 to-green-50 border-2 border-blue-300 shadow-2xl hover:shadow-3xl transition-all duration-300 h-full flex flex-col relative overflow-hidden">
+                {/* Popular Badge */}
+                <div className="absolute top-4 right-4">
+                  <Badge className="bg-gradient-to-r from-blue-600 to-green-600 text-white font-bold">
+                    MOST POPULAR
+                  </Badge>
+                </div>
+                
+                <CardHeader className="text-center pb-6">
+                  <div className="mb-2">
+                    <Badge variant="default" className="text-xs font-semibold bg-gradient-to-r from-blue-600 to-green-600">
+                      PREMIUM
+                    </Badge>
+                  </div>
+                  <CardTitle className="text-2xl font-bold text-gray-900" data-testid={`package-name-${premiumPackage.id}`}>
+                    {premiumPackage.planName}
+                  </CardTitle>
+                  <CardDescription className="text-sm text-gray-600 mt-2">
+                    {premiumPackage.description}
+                  </CardDescription>
+                  <div className="mt-6">
+                    <div className="flex items-baseline justify-center">
+                      <span className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent" data-testid={`package-price-${premiumPackage.id}`}>
+                        ₹{parseFloat(premiumPackage.price).toLocaleString()}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600 mt-2">{premiumPackage.duration}</p>
+                  </div>
+                </CardHeader>
+                <CardContent className="flex-1">
+                  <ul className="space-y-3">
+                    {(premiumPackage.features as PackageFeature[]).map((feature, idx) => (
+                      <li key={idx} className="flex items-start gap-3">
+                        <div className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center mt-0.5 ${
+                          feature.included 
+                            ? 'bg-green-100 text-green-600' 
+                            : 'bg-red-100 text-red-600'
+                        }`}>
+                          {feature.included ? (
+                            <Check className="w-3 h-3" />
+                          ) : (
+                            <X className="w-3 h-3" />
+                          )}
+                        </div>
+                        <span className={`text-sm ${
+                          feature.included ? 'text-gray-700 font-medium' : 'text-gray-500'
+                        }`}>
+                          {feature.text}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+                <CardFooter className="pt-6">
+                  <Button
+                    className="w-full bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white font-semibold py-6 shadow-lg"
+                    onClick={() => handlePayment(premiumPackage.id, premiumPackage.planName, premiumPackage.price)}
+                    disabled={paymentLoading === premiumPackage.id}
+                    data-testid={`button-buy-${premiumPackage.id}`}
+                  >
+                    {paymentLoading === premiumPackage.id ? 'Processing...' : 'BUY NOW'}
+                  </Button>
+                </CardFooter>
+              </Card>
+            </motion.div>
+          )}
         </motion.div>
       </div>
       
