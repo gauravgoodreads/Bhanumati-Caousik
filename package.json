@@ -9,7 +9,8 @@
     "preview": "vite preview --host 0.0.0.0",
     "check": "tsc",
     "studio:dev": "sanity dev",
-    "studio:deploy": "sanity deploy"
+    "studio:deploy": "sanity deploy",
+    "studio:pages": "node scripts/deploy-studio-pages.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
