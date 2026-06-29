@@ -36,7 +36,7 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (requestPath) => requestPath.replace(/^\/worker/, ""),
         headers: {
-          Origin: "https://counsellorprenuer.github.io",
+          Origin: "https://gauravgoodreads.github.io",
         },
       },
     },
