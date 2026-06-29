@@ -7,9 +7,10 @@ interface ServiceCardProps {
   title: string;
   description: string;
   gradient: string;
+  imageUrl?: string;
 }
 
-export default function ServiceCard({ icon: Icon, title, description, gradient }: ServiceCardProps) {
+export default function ServiceCard({ icon: Icon, title, description, gradient, imageUrl }: ServiceCardProps) {
   return (
     <motion.div
       whileHover={{ y: -8, scale: 1.02 }}
@@ -18,6 +19,9 @@ export default function ServiceCard({ icon: Icon, title, description, gradient }
       <Card className="group border-0 bg-white/90 backdrop-blur-md shadow-lg hover:shadow-2xl transition-all duration-500 rounded-2xl overflow-hidden relative" data-testid={`service-card-${title.toLowerCase().replace(/\s+/g, '-')}`}>
         <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-green-50/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         <CardContent className="p-8 text-center relative z-10">
+          {imageUrl && (
+            <img src={imageUrl} alt={title} className="w-full h-32 object-cover rounded-xl mb-4" loading="lazy" />
+          )}
           <motion.div 
             className={`inline-flex items-center justify-center w-20 h-20 rounded-2xl mb-6 ${gradient} shadow-lg relative`}
             whileHover={{ rotate: 5, scale: 1.1 }}

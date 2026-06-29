@@ -1,176 +1,70 @@
-import { useRoute } from 'wouter';
-import { useQuery } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
-import { Calendar, ArrowLeft } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import type { BlogPost } from '@shared/schema';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
+import { useRoute, Link } from "wouter";
+import { format } from "date-fns";
+import { Calendar, User, ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { PortableText } from "@portabletext/react";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+import { imageUrl } from "@/lib/sanity";
+import { useCms } from "@/hooks/useCms";
+import { Card, CardContent } from "@/components/ui/card";
 
 export default function BlogPostPage() {
-  const [, params] = useRoute('/blog/:slug');
+  const [, params] = useRoute("/blog/:slug");
   const slug = params?.slug;
+  const { data } = useCms();
+  const blog = data?.blogPosts.find((post) => post.slug === slug);
 
-  const { data: blogPost, isLoading, error } = useQuery<BlogPost>({
-    queryKey: ['/api/blog/slug', slug],
-    queryFn: async () => {
-      const response = await fetch(`/api/blog/slug/${slug}`);
-      if (!response.ok) {
-        throw new Error('Blog post not found');
-      }
-      return response.json();
-    },
-    enabled: !!slug,
-  });
-
-  if (isLoading) {
+  if (!blog) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30">
         <Navbar />
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded mb-4 w-32"></div>
-            <div className="h-12 bg-gray-200 rounded mb-6 w-full"></div>
-            <div className="h-6 bg-gray-200 rounded mb-8 w-48"></div>
-            <div className="h-64 bg-gray-200 rounded mb-8"></div>
-            <div className="space-y-3">
-              <div className="h-4 bg-gray-200 rounded w-full"></div>
-              <div className="h-4 bg-gray-200 rounded w-full"></div>
-              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-            </div>
-          </div>
+        <div className="max-w-4xl mx-auto px-4 py-32 text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Blog Post Not Found</h1>
+          <Link href="/blog"><Button>Back to Blog</Button></Link>
         </div>
         <Footer />
       </div>
     );
   }
-
-  if (error || !blogPost) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30">
-        <Navbar />
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">Blog Post Not Found</h1>
-            <p className="text-gray-600 mb-8">The blog post you're looking for doesn't exist.</p>
-            <Button onClick={() => window.history.back()}>
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Go Back
-            </Button>
-          </div>
-        </div>
-        <Footer />
-      </div>
-    );
-  }
-
-  const formattedDate = new Date(blogPost.createdAt).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30">
       <Navbar />
-      
-      <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          {/* Back button */}
-          <Button 
-            variant="ghost" 
-            onClick={() => window.history.back()}
-            className="mb-8 text-blue-600 hover:text-blue-800"
-            data-testid="button-back"
-          >
+      <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+        <Link href="/blog">
+          <Button variant="ghost" className="mb-8 text-blue-600 hover:text-blue-800">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Blog
           </Button>
-
-          {/* Header */}
-          <header className="mb-12">
-            <div className="flex items-center text-sm text-gray-500 mb-6">
-              <span className="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-xs font-medium">
-                {blogPost.category}
+        </Link>
+        <Card className="overflow-hidden shadow-xl">
+          {blog.image && (
+            <img
+              src={imageUrl(blog.image, 1200)}
+              alt={blog.image.alt || blog.title}
+              className="w-full max-h-[460px] object-cover"
+              loading="lazy"
+            />
+          )}
+          <CardContent className="p-7 md:p-12">
+            <h1 className="font-heading text-3xl md:text-4xl font-bold text-gray-900 mb-6">{blog.title}</h1>
+            <div className="flex flex-wrap gap-6 text-gray-500 mb-8 pb-6 border-b">
+              <span className="flex items-center gap-2">
+                <Calendar className="w-5 h-5" />
+                {format(new Date(blog.publishedAt), "MMMM dd, yyyy")}
               </span>
-              <span className="mx-3 text-blue-300">•</span>
-              <Calendar className="h-4 w-4 mr-2 text-blue-500" />
-              <span>{formattedDate}</span>
-              <span className="mx-3 text-blue-300">•</span>
-              <span>{blogPost.readTime} min read</span>
+              <span className="flex items-center gap-2">
+                <User className="w-5 h-5" />
+                {blog.author}
+              </span>
             </div>
-            
-            <h1 className="font-heading text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-6 leading-tight">
-              {blogPost.title}
-            </h1>
-            
-            {blogPost.excerpt && (
-              <p className="text-xl text-gray-600 leading-relaxed">
-                {blogPost.excerpt}
-              </p>
-            )}
-          </header>
-
-          {/* Featured Image */}
-          {blogPost.imageUrl && (
-            <motion.div 
-              className="mb-12 rounded-2xl overflow-hidden shadow-xl"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-            >
-              <img
-                src={blogPost.imageUrl}
-                alt={blogPost.title}
-                className="w-full h-64 md:h-80 lg:h-96 object-cover"
-              />
-            </motion.div>
-          )}
-
-          {/* Content */}
-          <motion.div 
-            className="prose prose-lg max-w-none"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-          >
-            <div 
-              className="text-gray-700 leading-relaxed"
-              style={{ whiteSpace: 'pre-line' }}
-              data-testid="blog-content"
-            >
-              {blogPost.content}
+            <div className="prose prose-lg max-w-none">
+              {blog.body ? <PortableText value={blog.body as never} /> : <p className="text-gray-700">{blog.excerpt}</p>}
             </div>
-          </motion.div>
-
-          {/* Tags */}
-          {blogPost.tags && blogPost.tags.length > 0 && (
-            <motion.div 
-              className="mt-12 pt-8 border-t border-gray-200"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.6 }}
-            >
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Tags</h3>
-              <div className="flex flex-wrap gap-2">
-                {blogPost.tags.map((tag, index) => (
-                  <span
-                    key={index}
-                    className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm font-medium hover:bg-gray-200 transition-colors duration-200"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </motion.div>
-          )}
-        </motion.div>
+          </CardContent>
+        </Card>
       </article>
-      
       <Footer />
     </div>
   );

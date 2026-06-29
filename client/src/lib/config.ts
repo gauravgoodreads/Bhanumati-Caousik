@@ -1,0 +1,9 @@
+export const PROJECT_ID = "bhanumati-caousik";
+export const SANITY_PROJECT_ID = "gmm8mjbz";
+export const SANITY_DATASET = "production";
+export const SANITY_STUDIO_HOST = "bhanumati-caousik";
+export const GITHUB_PAGES_REPO_NAME = "Bhanumati-Caousik";
+export const SITE_BASE = "/Bhanumati-Caousik";
+export const WORKER_URL = "https://multi-tenant-platform.gauravgoodreads.workers.dev";
+export const CONTACT_EMAIL = "learningpartners1inc@gmail.com";
+export const CONTACT_PHONE = "+91-9710906655";

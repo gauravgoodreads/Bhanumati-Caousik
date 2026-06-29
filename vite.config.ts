@@ -4,6 +4,7 @@ import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
 export default defineConfig({
+  base: "/Bhanumati-Caousik/",
   plugins: [
     react(),
     runtimeErrorOverlay(),
@@ -25,10 +26,20 @@ export default defineConfig({
   },
   root: path.resolve(import.meta.dirname, "client"),
   build: {
-    outDir: path.resolve(import.meta.dirname, "dist/public"),
+    outDir: path.resolve(import.meta.dirname, "dist"),
     emptyOutDir: true,
   },
   server: {
+    proxy: {
+      "/worker": {
+        target: "https://multi-tenant-platform.gauravgoodreads.workers.dev",
+        changeOrigin: true,
+        rewrite: (requestPath) => requestPath.replace(/^\/worker/, ""),
+        headers: {
+          Origin: "https://counsellorprenuer.github.io",
+        },
+      },
+    },
     fs: {
       strict: true,
       deny: ["**/.*"],

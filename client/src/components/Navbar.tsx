@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link, useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Menu, X, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -7,6 +8,8 @@ import logoUrl from '@assets/logo_1758885211143.png';
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [location] = useLocation();
+  const isHome = location === '/';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -17,12 +20,24 @@ export default function Navbar() {
   }, []);
 
   const scrollToSection = (id: string) => {
+    if (!isHome) {
+      window.location.href = `${import.meta.env.BASE_URL}${id === 'about' ? '' : `#${id}`}`;
+      return;
+    }
     const element = document.getElementById(id);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
       setIsOpen(false);
     }
   };
+
+  const navItems = [
+    { label: 'About', section: 'about', testId: 'nav-about', href: '/#about' },
+    { label: 'Services', section: 'services', testId: 'nav-services', href: '/#services' },
+    { label: 'Pricing', section: 'pricing', testId: 'nav-pricing', href: '/pricing', isRoute: true },
+    { label: 'Blog', section: 'blog', testId: 'nav-blog', href: '/blog', isRoute: true },
+    { label: 'Contact', section: 'contact', testId: 'nav-contact', href: '/#contact' },
+  ];
 
   return (
     <motion.nav 
@@ -59,32 +74,33 @@ export default function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
-            {[
-              { label: 'About', section: 'about', testId: 'nav-about' },
-              { label: 'Services', section: 'services', testId: 'nav-services' },
-              { label: 'For Whom', section: 'target-audience', testId: 'nav-for-whom' },
-              { label: 'Blog', section: 'blog', testId: 'nav-blog' },
-              { label: 'Contact', section: 'contact', testId: 'nav-contact' }
-            ].map((item, index) => (
-              <motion.button
-                key={item.section}
-                onClick={() => scrollToSection(item.section)}
-                className="text-gray-700 hover:text-blue-600 transition-all duration-300 font-medium px-3 py-2 rounded-lg hover:bg-blue-50 relative"
-                data-testid={item.testId}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.05 }}
-              >
-                {item.label}
-                <motion.div
-                  className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-blue-600 to-green-600 origin-left"
-                  initial={{ scaleX: 0 }}
-                  whileHover={{ scaleX: 1 }}
-                  transition={{ duration: 0.3 }}
-                />
-              </motion.button>
+            {navItems.map((item, index) => (
+              item.isRoute ? (
+                <Link key={item.section} href={item.href}>
+                  <motion.span
+                    className="text-gray-700 hover:text-blue-600 transition-all duration-300 font-medium px-3 py-2 rounded-lg hover:bg-blue-50 relative cursor-pointer inline-block"
+                    data-testid={item.testId}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    {item.label}
+                  </motion.span>
+                </Link>
+              ) : (
+                <motion.button
+                  key={item.section}
+                  onClick={() => scrollToSection(item.section)}
+                  className="text-gray-700 hover:text-blue-600 transition-all duration-300 font-medium px-3 py-2 rounded-lg hover:bg-blue-50 relative"
+                  data-testid={item.testId}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.05 }}
+                >
+                  {item.label}
+                </motion.button>
+              )
             ))}
           </div>
 
@@ -137,25 +153,30 @@ export default function Navbar() {
               transition={{ duration: 0.2 }}
             >
               <div className="px-2 pt-2 pb-3 space-y-1">
-                {[
-                  { label: 'About', section: 'about', testId: 'mobile-nav-about' },
-                  { label: 'Services', section: 'services', testId: 'mobile-nav-services' },
-                  { label: 'For Whom', section: 'target-audience', testId: 'mobile-nav-for-whom' },
-                  { label: 'Blog', section: 'blog', testId: 'mobile-nav-blog' },
-                  { label: 'Contact', section: 'contact', testId: 'mobile-nav-contact' }
-                ].map((item, index) => (
-                  <motion.button
-                    key={item.section}
-                    onClick={() => scrollToSection(item.section)}
-                    className="block w-full text-left px-3 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-all duration-300 rounded-lg font-medium"
-                    data-testid={item.testId}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.2, delay: index * 0.05 }}
-                    whileHover={{ x: 5 }}
-                  >
-                    {item.label}
-                  </motion.button>
+                {navItems.map((item, index) => (
+                  item.isRoute ? (
+                    <Link key={item.section} href={item.href}>
+                      <span
+                        className="block w-full text-left px-3 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-all duration-300 rounded-lg font-medium"
+                        data-testid={`mobile-${item.testId}`}
+                        onClick={() => setIsOpen(false)}
+                      >
+                        {item.label}
+                      </span>
+                    </Link>
+                  ) : (
+                    <motion.button
+                      key={item.section}
+                      onClick={() => scrollToSection(item.section)}
+                      className="block w-full text-left px-3 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-all duration-300 rounded-lg font-medium"
+                      data-testid={`mobile-${item.testId}`}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.2, delay: index * 0.05 }}
+                    >
+                      {item.label}
+                    </motion.button>
+                  )
                 ))}
                 <motion.div 
                   className="px-3 pt-4"
